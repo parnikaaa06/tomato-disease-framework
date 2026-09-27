@@ -27,11 +27,8 @@ def load_config(config_path="config.yaml"):
 def get_dataset_root(config):
     dataset_root = config["data"]["external_dataset_path"]
 
-    # Environment variable has not been configured
-    if dataset_root.startswith("${"):
-        return None
-
-    if not dataset_root:
+    # Environment variable is not configured
+    if not dataset_root or dataset_root.startswith("${"):
         return None
 
     return Path(dataset_root)
