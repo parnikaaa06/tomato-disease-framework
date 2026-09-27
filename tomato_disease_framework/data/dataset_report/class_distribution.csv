@@ -1,2 +1,11 @@
 class_name,image_count,percentage,status
-,,,not available / not verified
+Tomato___Bacterial_spot,2127,11.712555,verified
+Tomato___Early_blight,1000,5.506608,verified
+Tomato___Late_blight,1909,10.512115,verified
+Tomato___Leaf_Mold,952,5.242291,verified
+Tomato___Septoria_leaf_spot,1771,9.752203,verified
+Tomato___Spider_mites Two-spotted_spider_mite,1676,9.229075,verified
+Tomato___Target_Spot,1404,7.731278,verified
+Tomato___Tomato_Yellow_Leaf_Curl_Virus,5357,29.498899,verified
+Tomato___Tomato_mosaic_virus,373,2.053965,verified
+Tomato___healthy,1591,8.761013,verified

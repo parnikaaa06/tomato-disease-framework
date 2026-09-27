@@ -7,7 +7,7 @@
   "images_in_exact_duplicate_groups": 28,
   "near_duplicate_candidate_pairs": 65,
   "policy": {
-    "exact_duplicates_grouped_by_md5": true,
+    "exact_duplicates_grouped_by_sha256": true,
     "raw_images_left_intact": true,
     "near_duplicates_not_auto_deleted": true,
     "cross_class_near_duplicates_preserved": true

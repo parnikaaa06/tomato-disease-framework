@@ -1,2 +1,13 @@
 metric,value,status
-all image statistics,,not available / not verified
+image_count,18160,verified
+class_count,10,verified
+width,256,verified
+height,256,verified
+unique_resolution_count,1,verified
+readable_image_count,18160,verified
+corrupted_or_unreadable_count,0,verified
+jpg_count,18159,verified
+jpeg_count,1,verified
+exact_duplicate_groups,14,verified
+images_in_exact_duplicate_groups,28,verified
+near_duplicate_candidate_pairs,65,verified

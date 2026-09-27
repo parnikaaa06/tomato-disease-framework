@@ -1,3 +1,11 @@
+"""Legacy Phase 2 split utility.
+
+Warning: the verified files in ``data/splits/`` are the current source of
+truth. This script is not the authoritative split-generation procedure.
+Do not rerun any split-generation script without first validating the
+duplicate-aware reproducibility procedure.
+"""
+
 from __future__ import annotations
 
 import csv

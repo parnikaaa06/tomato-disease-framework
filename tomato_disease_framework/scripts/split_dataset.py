@@ -4,6 +4,13 @@ The script is intentionally fail-closed. It only uses the dataset root from
 config.yaml and requires a verified Phase 1 report plus an exact-duplicate
 manifest before producing a split. It never infers duplicate relationships
 from the user-provided counts.
+
+Warning: the verified files in ``data/splits/`` are the current source of
+truth. This script is not the authoritative split-generation procedure.
+Its duplicate-manifest contract and ``TDF_DATASET_ROOT`` handling have not
+been validated against the verified procedure. Do not rerun any
+split-generation script without first validating the duplicate-aware
+reproducibility procedure.
 """
 
 from __future__ import annotations

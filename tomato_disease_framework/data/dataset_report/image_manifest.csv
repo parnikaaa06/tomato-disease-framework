@@ -1,4 +1,4 @@
-relative_file_path,class_name,file_name,extension,width,height,file_size_bytes,md5_hash,exact_duplicate_group_id,near_duplicate_status,status
+relative_file_path,class_name,file_name,extension,width,height,file_size_bytes,sha256_hash,exact_duplicate_group_id,near_duplicate_status,status
 Tomato___Bacterial_spot/00416648-be6e-4bd4-bc8d-82f43f8a7240___GCREC_Bact.Sp 3110.JPG,Tomato___Bacterial_spot,00416648-be6e-4bd4-bc8d-82f43f8a7240___GCREC_Bact.Sp 3110.JPG,.jpg,256,256,11797,3320c46706d434c028aa93fde868140c48604a328844f2b1c553d020bdc9db06,EXD_03612,not evaluated,verified
 Tomato___Bacterial_spot/0045ba29-ed1b-43b4-afde-719cc7adefdb___GCREC_Bact.Sp 6254.JPG,Tomato___Bacterial_spot,0045ba29-ed1b-43b4-afde-719cc7adefdb___GCREC_Bact.Sp 6254.JPG,.jpg,256,256,14427,88555cac183d27f4efd1972bc672e1178661f2db68753efbaacd73eb3c43cb45,EXD_09654,not evaluated,verified
 Tomato___Bacterial_spot/00639d29-2d1a-4fcf-9bd3-a2b3109c74c4___UF.GRC_BS_Lab Leaf 1054.JPG,Tomato___Bacterial_spot,00639d29-2d1a-4fcf-9bd3-a2b3109c74c4___UF.GRC_BS_Lab Leaf 1054.JPG,.jpg,256,256,12564,1c1dde85185153d24bc79fb343681aed009737513c1c5c5864f4952026ef1b93,EXD_02042,not evaluated,verified

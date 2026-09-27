@@ -1,3 +1,11 @@
+"""Build the Phase 1 image manifest and duplicate reports.
+
+This is a report-building utility, not the authoritative split-generation
+procedure. The verified files in ``data/splits/`` are the current source of
+truth. Do not rerun any split-generation script without first validating the
+duplicate-aware reproducibility procedure.
+"""
+
 from __future__ import annotations
 
 import csv
@@ -120,7 +128,7 @@ def blocked_manifest(
             "width",
             "height",
             "file_size_bytes",
-            "md5_hash",
+            "sha256_hash",
             "exact_duplicate_group_id",
             "near_duplicate_status",
             "status",
@@ -134,7 +142,7 @@ def blocked_manifest(
                 "width": "",
                 "height": "",
                 "file_size_bytes": "",
-                "md5_hash": "",
+                "sha256_hash": "",
                 "exact_duplicate_group_id": "",
                 "near_duplicate_status": "",
                 "status": status,
@@ -305,7 +313,7 @@ def build_manifest(config_path: str | Path) -> None:
 
     image_rows: list[dict[str, Any]] = []
 
-    md5_to_rows: defaultdict[
+    sha256_to_rows: defaultdict[
         str,
         list[dict[str, Any]]
     ] = defaultdict(list)
@@ -349,10 +357,7 @@ def build_manifest(config_path: str | Path) -> None:
             "height": height,
             "file_size_bytes": path.stat().st_size,
 
-            # Kept with the existing project schema.
-            # The value is SHA-256 despite the historical
-            # column name md5_hash.
-            "md5_hash": digest,
+            "sha256_hash": digest,
 
             "exact_duplicate_group_id": "EXD_NONE",
             "near_duplicate_status": "not evaluated",
@@ -365,7 +370,7 @@ def build_manifest(config_path: str | Path) -> None:
             row["relative_file_path"]
         ] = row
 
-        md5_to_rows[digest].append(row)
+        sha256_to_rows[digest].append(row)
 
     # ---------------------------------------------------------
     # STEP 2: Exact duplicate groups
@@ -376,7 +381,7 @@ def build_manifest(config_path: str | Path) -> None:
     group_entries: list[dict[str, Any]] = []
 
     for idx, (_, rows) in enumerate(
-        sorted(md5_to_rows.items(), key=lambda item: item[0]),
+        sorted(sha256_to_rows.items(), key=lambda item: item[0]),
         start=1,
     ):
 
@@ -409,7 +414,7 @@ def build_manifest(config_path: str | Path) -> None:
             )
 
     print(
-        f"Unique content hashes: {len(md5_to_rows)}"
+        f"Unique content hashes: {len(sha256_to_rows)}"
     )
 
     print(
@@ -550,7 +555,7 @@ def build_manifest(config_path: str | Path) -> None:
             "width",
             "height",
             "file_size_bytes",
-            "md5_hash",
+            "sha256_hash",
             "exact_duplicate_group_id",
             "near_duplicate_status",
             "status",
@@ -589,7 +594,7 @@ def build_manifest(config_path: str | Path) -> None:
         "status": "verified",
         "dataset_root": str(dataset_root),
         "total_images": len(image_rows),
-        "unique_content_hashes": len(md5_to_rows),
+        "unique_content_hashes": len(sha256_to_rows),
         "exact_duplicate_groups": len(group_entries),
         "images_in_exact_duplicate_groups": sum(
             item["number_of_files"]
@@ -599,7 +604,7 @@ def build_manifest(config_path: str | Path) -> None:
             near_rows
         ),
         "policy": {
-            "exact_duplicates_grouped_by_md5": True,
+            "exact_duplicates_grouped_by_sha256": True,
             "raw_images_left_intact": True,
             "near_duplicates_not_auto_deleted": True,
             "cross_class_near_duplicates_preserved": True,
@@ -620,7 +625,7 @@ def build_manifest(config_path: str | Path) -> None:
     print(f"Total images: {len(image_rows)}")
     print(
         f"Unique content hashes: "
-        f"{len(md5_to_rows)}"
+        f"{len(sha256_to_rows)}"
     )
     print(
         f"Exact duplicate groups: "

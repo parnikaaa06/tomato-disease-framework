@@ -1,8 +1,58 @@
 {
-  "status": "not available / not verified",
-  "configured_dataset_path": "/content/drive/MyDrive/UROP_Plant_Disease/datasets/PlantVillage/plantvillage dataset/color",
-  "resolved_dataset_path": "\\content\\drive\\MyDrive\\UROP_Plant_Disease\\datasets\\PlantVillage\\plantvillage dataset\\color",
-  "reason": "Configured dataset root is not mounted or is not a directory in this runtime.",
-  "verified_at_runtime": false,
-  "note": "No dataset statistics, annotations, masks, severity labels, or model results were fabricated."
+  "status": "verified",
+  "configured_dataset_path": "${TDF_DATASET_ROOT}",
+  "verified_dataset_path": "/content/drive/MyDrive/UROP_Plant_Disease/datasets/PlantVillage/plantvillage dataset/color",
+  "verified_at_runtime": true,
+  "total_images": 18160,
+  "class_count": 10,
+  "class_directories": [
+    "Tomato___Bacterial_spot",
+    "Tomato___Early_blight",
+    "Tomato___Late_blight",
+    "Tomato___Leaf_Mold",
+    "Tomato___Septoria_leaf_spot",
+    "Tomato___Spider_mites Two-spotted_spider_mite",
+    "Tomato___Target_Spot",
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+    "Tomato___Tomato_mosaic_virus",
+    "Tomato___healthy"
+  ],
+  "class_counts": {
+    "Tomato___Bacterial_spot": 2127,
+    "Tomato___Early_blight": 1000,
+    "Tomato___Late_blight": 1909,
+    "Tomato___Leaf_Mold": 952,
+    "Tomato___Septoria_leaf_spot": 1771,
+    "Tomato___Spider_mites Two-spotted_spider_mite": 1676,
+    "Tomato___Target_Spot": 1404,
+    "Tomato___Tomato_Yellow_Leaf_Curl_Virus": 5357,
+    "Tomato___Tomato_mosaic_virus": 373,
+    "Tomato___healthy": 1591
+  },
+  "dimensions": {
+    "width": 256,
+    "height": 256,
+    "unique_resolution_count": 1
+  },
+  "corrupted_or_unreadable_count": 0,
+  "extensions": {
+    ".jpg": 18159,
+    ".jpeg": 1
+  },
+  "segmented_dataset": {
+    "present": true,
+    "disease_lesion_masks_verified": false,
+    "note": "The segmented images were inspected as leaf/background masking outputs; they are not established as disease-lesion ground truth."
+  },
+  "exact_duplicates": {
+    "unique_content_hashes": 18146,
+    "groups": 14,
+    "images_in_groups": 28
+  },
+  "near_duplicates": {
+    "candidate_pairs": 65,
+    "automatically_removed": false,
+    "cross_class_pairs_manually_reviewed_as_visually_different": 4
+  },
+  "note": "Raw dataset files remain external and immutable. Classification labels are not segmentation masks or severity labels."
 }
