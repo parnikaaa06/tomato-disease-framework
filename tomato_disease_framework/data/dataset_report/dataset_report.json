@@ -1,0 +1,8 @@
+{
+  "status": "not available / not verified",
+  "configured_dataset_path": "/content/drive/MyDrive/UROP_Plant_Disease/datasets/PlantVillage/plantvillage dataset/color",
+  "resolved_dataset_path": "\\content\\drive\\MyDrive\\UROP_Plant_Disease\\datasets\\PlantVillage\\plantvillage dataset\\color",
+  "reason": "Configured dataset root is not mounted or is not a directory in this runtime.",
+  "verified_at_runtime": false,
+  "note": "No dataset statistics, annotations, masks, severity labels, or model results were fabricated."
+}

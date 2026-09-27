@@ -1,0 +1,38 @@
+﻿# Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+.venv/
+venv/
+.env
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Data and model artifacts
+*.ckpt
+*.pt
+*.pth
+*.onnx
+*.h5
+*.pkl
+*.joblib
+
+# Large dataset folders (keep external)
+data/raw/
+!data/raw/.gitkeep
+
+data/processed/
+!data/processed/.gitkeep
+
+data/splits/
+!data/splits/.gitkeep
+
+# Local outputs
+results/
+!results/.gitkeep
+
+# IDE settings
+.vscode/
+.DS_Store

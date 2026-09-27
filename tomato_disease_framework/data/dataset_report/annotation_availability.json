@@ -1,0 +1,14 @@
+{
+  "status": "not available / not verified",
+  "segmentation_masks": {
+    "available": false,
+    "verified": false,
+    "reason": "Configured dataset root is not mounted or is not a directory in this runtime."
+  },
+  "severity_annotations": {
+    "available": false,
+    "verified": false,
+    "reason": "Configured dataset root is not mounted or is not a directory in this runtime."
+  },
+  "classification_labels_are_not_masks_or_severity": true
+}

@@ -1,0 +1,40 @@
+﻿project:
+  name: "tomato_disease_framework"
+  level: 1
+  title: "An Explainable Vision-Language and Augmented Reality Framework for Early Plant Disease Detection, Progression Assessment and Decision Support"
+
+hardware:
+  device: "auto"  # set to "cuda" if available, otherwise "cpu"
+  seed: 42
+
+data:
+  root_dir: "data"
+  raw_dir: "data/raw"
+  processed_dir: "data/processed"
+  splits_dir: "data/splits"
+  dataset_report_dir: "data/dataset_report"
+
+  plantvillage_subset: "tomato"
+
+  # Google Drive + Colab PlantVillage dataset
+  external_dataset_path: "${TDF_DATASET_ROOT}"
+
+model:
+  image_size: 224
+  batch_size: 32
+  num_workers: 4
+  learning_rate: 0.0001
+  epochs: 25
+  seed: 42
+
+training:
+  train_split: 0.70
+  validation_split: 0.15
+  test_split: 0.15
+  stratify: true
+  seed: 42
+  
+paths:
+  results_dir: "results"
+  configs_dir: "configs"
+  logs_dir: "results/logs"
