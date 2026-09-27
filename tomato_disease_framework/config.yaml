@@ -3,8 +3,12 @@ project:
   level: 1
   title: "An Explainable Vision-Language and Augmented Reality Framework for Early Plant Disease Detection, Progression Assessment and Decision Support"
 
+runtime:
+  device: "auto"
+  seed: 42
+
 hardware:
-  device: "auto"  # set to "cuda" if available, otherwise "cpu"
+  device: "auto"
   seed: 42
 
 data:
@@ -15,9 +19,7 @@ data:
   dataset_report_dir: "data/dataset_report"
   plantvillage_subset: "tomato"
   external_dataset_path: "${TDF_DATASET_ROOT}"
-
-  # Google Drive + Colab PlantVillage dataset
-  external_dataset_path: "${TDF_DATASET_ROOT}"
+  # Google Drive + Colab PlantVillage dataset is supplied via TDF_DATASET_ROOT
 
 model:
   image_size: 224
@@ -27,13 +29,14 @@ model:
   epochs: 25
   seed: 42
 
-training:
-  train_split: 0.70
-  validation_split: 0.15
-  test_split: 0.15
+split:
+  train_ratio: 0.70
+  validation_ratio: 0.15
+  test_ratio: 0.15
   stratify: true
+  group_duplicates: true
   seed: 42
-  
+
 paths:
   results_dir: "results"
   configs_dir: "configs"
