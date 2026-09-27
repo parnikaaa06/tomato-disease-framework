@@ -1,4 +1,4 @@
-﻿project:
+project:
   name: "tomato_disease_framework"
   level: 1
   title: "An Explainable Vision-Language and Augmented Reality Framework for Early Plant Disease Detection, Progression Assessment and Decision Support"
@@ -13,8 +13,8 @@ data:
   processed_dir: "data/processed"
   splits_dir: "data/splits"
   dataset_report_dir: "data/dataset_report"
-
   plantvillage_subset: "tomato"
+  external_dataset_path: "${TDF_DATASET_ROOT}"
 
   # Google Drive + Colab PlantVillage dataset
   external_dataset_path: "${TDF_DATASET_ROOT}"
