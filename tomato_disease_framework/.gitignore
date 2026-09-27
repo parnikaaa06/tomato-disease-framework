@@ -26,8 +26,6 @@ data/raw/
 data/processed/
 !data/processed/.gitkeep
 
-data/splits/
-!data/splits/.gitkeep
 
 # Local outputs
 results/
