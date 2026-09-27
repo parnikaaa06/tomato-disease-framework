@@ -1,0 +1,15 @@
+{
+  "status": "verified",
+  "dataset_root": "/content/drive/MyDrive/UROP_Plant_Disease/datasets/PlantVillage/plantvillage dataset/color",
+  "total_images": 18160,
+  "unique_content_hashes": 18146,
+  "exact_duplicate_groups": 14,
+  "images_in_exact_duplicate_groups": 28,
+  "near_duplicate_candidate_pairs": 65,
+  "policy": {
+    "exact_duplicates_grouped_by_md5": true,
+    "raw_images_left_intact": true,
+    "near_duplicates_not_auto_deleted": true,
+    "cross_class_near_duplicates_preserved": true
+  }
+}

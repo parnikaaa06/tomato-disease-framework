@@ -1,0 +1,15 @@
+metric,value
+status,verified
+dataset_root,/content/drive/MyDrive/UROP_Plant_Disease/datasets/PlantVillage/plantvillage dataset/color
+total_original_images,18160
+train_count,12710
+validation_count,2725
+test_count,2725
+train_percentage,69.99
+validation_percentage,15.01
+test_percentage,15.01
+per_class_counts,"{""train"": {""Tomato___Bacterial_spot"": 1489, ""Tomato___Early_blight"": 700, ""Tomato___Late_blight"": 1337, ""Tomato___Leaf_Mold"": 666, ""Tomato___Septoria_leaf_spot"": 1239, ""Tomato___Spider_mites Two-spotted_spider_mite"": 1174, ""Tomato___Target_Spot"": 982, ""Tomato___Tomato_Yellow_Leaf_Curl_Virus"": 3749, ""Tomato___Tomato_mosaic_virus"": 261, ""Tomato___healthy"": 1113}, ""validation"": {""Tomato___Bacterial_spot"": 319, ""Tomato___Early_blight"": 150, ""Tomato___Late_blight"": 286, ""Tomato___Leaf_Mold"": 143, ""Tomato___Septoria_leaf_spot"": 266, ""Tomato___Spider_mites Two-spotted_spider_mite"": 251, ""Tomato___Target_Spot"": 211, ""Tomato___Tomato_Yellow_Leaf_Curl_Virus"": 804, ""Tomato___Tomato_mosaic_virus"": 56, ""Tomato___healthy"": 239}, ""test"": {""Tomato___Bacterial_spot"": 319, ""Tomato___Early_blight"": 150, ""Tomato___Late_blight"": 286, ""Tomato___Leaf_Mold"": 143, ""Tomato___Septoria_leaf_spot"": 266, ""Tomato___Spider_mites Two-spotted_spider_mite"": 251, ""Tomato___Target_Spot"": 211, ""Tomato___Tomato_Yellow_Leaf_Curl_Virus"": 804, ""Tomato___Tomato_mosaic_virus"": 56, ""Tomato___healthy"": 239}}"
+random_seed,42
+stratification_confirmed,True
+zero_image_overlap,True
+count_verification,True
