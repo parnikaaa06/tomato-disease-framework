@@ -1,0 +1,34 @@
+experiment:
+  name: efficientnet_b0_baseline
+  output_dir: results/phase3/efficientnet_b0_baseline
+  seed: 42
+  model_name: EfficientNetB0
+  pretrained: true
+  class_count: 10
+  image_size: 224
+  batch_size: 32
+  learning_rate: 0.0001
+  optimizer: Adam
+  scheduler: null
+  epochs: 25
+  augmentation:
+    resize: [224, 224]
+    random_horizontal_flip: true
+    normalization: ImageNet
+
+data:
+  splits_dir: data/splits
+  dataset_root_env: TDF_DATASET_ROOT
+  split_files:
+    train: data/splits/train.csv
+    validation: data/splits/validation.csv
+    test: data/splits/test.csv
+  expected_sizes:
+    train: 12710
+    validation: 2725
+    test: 2725
+
+runtime:
+  device: auto
+  num_workers: 4
+  pin_memory: true
