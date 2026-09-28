@@ -35,13 +35,17 @@ def resolve_device(config: dict[str, Any]) -> torch.device:
 
     if requested_device == "cuda":
         if not torch.cuda.is_available():
-            raise RuntimeError("CUDA was requested but is not available.")
+            raise RuntimeError(
+                "CUDA was requested but is not available."
+            )
         return torch.device("cuda")
 
     if requested_device == "cpu":
         return torch.device("cpu")
 
-    return torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    return torch.device(
+        "cuda" if torch.cuda.is_available() else "cpu"
+    )
 
 
 def train_one_epoch(
@@ -99,8 +103,12 @@ def validate_one_epoch(
 
         total_loss += loss.item() * images.size(0)
 
-        all_predictions.extend(predictions.cpu().numpy().tolist())
-        all_targets.extend(labels.cpu().numpy().tolist())
+        all_predictions.extend(
+            predictions.cpu().numpy().tolist()
+        )
+        all_targets.extend(
+            labels.cpu().numpy().tolist()
+        )
 
     metrics = classification_metrics(
         all_targets,
@@ -108,7 +116,9 @@ def validate_one_epoch(
         class_names,
     )
 
-    metrics["loss"] = total_loss / len(loader.dataset)
+    metrics["loss"] = (
+        total_loss / len(loader.dataset)
+    )
 
     return metrics
 
@@ -135,18 +145,27 @@ def save_experiment_config(
     output_dir: str | Path,
     config: dict,
 ) -> None:
-    """Save the experiment configuration."""
+    """Save experiment configuration."""
     output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=True)
+    output.mkdir(
+        parents=True,
+        exist_ok=True,
+    )
 
-    (output / "config.json").write_text(
-        json.dumps(config, indent=2),
+    (
+        output / "config.json"
+    ).write_text(
+        json.dumps(
+            config,
+            indent=2,
+        ),
         encoding="utf-8",
     )
 
 
 def main() -> None:
-    """Run the complete EfficientNetB0 baseline training."""
+    """Run EfficientNetB0 baseline training."""
+
     import argparse
     import yaml
 
@@ -154,14 +173,23 @@ def main() -> None:
         load_phase2_splits,
         TomatoLeafDataset,
     )
-    from preprocessing.transforms import build_transforms
-    from models.efficientnet_baseline import build_efficientnet_b0
+    from preprocessing.transforms import (
+        build_transforms,
+    )
+    from models.efficientnet_baseline import (
+        build_efficientnet_b0,
+    )
+
+    # ---------------------------------------------------------
+    # Arguments
+    # ---------------------------------------------------------
 
     parser = argparse.ArgumentParser()
+
     parser.add_argument(
         "--config",
         required=True,
-        help="Path to the Phase 3 configuration YAML file.",
+        help="Path to Phase 3 configuration YAML.",
     )
 
     args = parser.parse_args()
@@ -169,34 +197,56 @@ def main() -> None:
     # ---------------------------------------------------------
     # Load configuration
     # ---------------------------------------------------------
-    with open(args.config, "r", encoding="utf-8") as f:
+
+    with open(
+        args.config,
+        "r",
+        encoding="utf-8",
+    ) as f:
         config = yaml.safe_load(f)
+
+    experiment = config["experiment"]
+    data_config = config["data"]
+    runtime = config["runtime"]
 
     # ---------------------------------------------------------
     # Reproducibility
     # ---------------------------------------------------------
-    set_reproducibility(config["runtime"]["seed"])
+
+    set_reproducibility(
+        experiment["seed"]
+    )
 
     # ---------------------------------------------------------
     # Device
     # ---------------------------------------------------------
+
     device = resolve_device(config)
 
     print("Configuration loaded.")
     print("Device:", device)
 
     if device.type == "cuda":
-        print("GPU:", torch.cuda.get_device_name(0))
+        print(
+            "GPU:",
+            torch.cuda.get_device_name(0),
+        )
 
     # ---------------------------------------------------------
-    # Load Phase 2 splits
+    # Phase 2 splits
     # ---------------------------------------------------------
-    split_dir = config["data"]["splits_dir"]
 
-    splits = load_phase2_splits(split_dir)
+    split_dir = data_config["splits_dir"]
+
+    splits = load_phase2_splits(
+        split_dir
+    )
 
     classes = sorted(
-        {row["class_name"] for row in splits["train"]}
+        {
+            row["class_name"]
+            for row in splits["train"]
+        }
     )
 
     class_to_idx = {
@@ -204,32 +254,56 @@ def main() -> None:
         for i, name in enumerate(classes)
     }
 
-    print("Classes:", classes)
-    print("Training samples:", len(splits["train"]))
-    print("Validation samples:", len(splits["validation"]))
+    print(
+        "Classes:",
+        classes,
+    )
+
+    print(
+        "Training samples:",
+        len(splits["train"]),
+    )
+
+    print(
+        "Validation samples:",
+        len(splits["validation"]),
+    )
 
     # ---------------------------------------------------------
     # Dataset root
     # ---------------------------------------------------------
-    if "TDF_DATASET_ROOT" not in os.environ:
+
+    dataset_env = data_config[
+        "dataset_root_env"
+    ]
+
+    if dataset_env not in os.environ:
         raise RuntimeError(
-            "TDF_DATASET_ROOT environment variable is not set."
+            f"{dataset_env} environment variable "
+            "is not set."
         )
 
-    dataset_root = os.environ["TDF_DATASET_ROOT"]
+    dataset_root = os.environ[
+        dataset_env
+    ]
 
-    print("Dataset root:", dataset_root)
+    print(
+        "Dataset root:",
+        dataset_root,
+    )
 
     # ---------------------------------------------------------
     # Transforms
     # ---------------------------------------------------------
+
     transforms = build_transforms(
-        config["model"]["image_size"]
+        experiment["image_size"]
     )
 
     # ---------------------------------------------------------
     # Datasets
     # ---------------------------------------------------------
+
     train_dataset = TomatoLeafDataset(
         splits["train"],
         dataset_root,
@@ -247,57 +321,90 @@ def main() -> None:
     # ---------------------------------------------------------
     # DataLoaders
     # ---------------------------------------------------------
+
     train_loader = DataLoader(
         train_dataset,
-        batch_size=config["model"]["batch_size"],
+        batch_size=experiment[
+            "batch_size"
+        ],
         shuffle=True,
-        num_workers=config["model"]["num_workers"],
-        pin_memory=torch.cuda.is_available(),
+        num_workers=runtime[
+            "num_workers"
+        ],
+        pin_memory=runtime[
+            "pin_memory"
+        ],
     )
 
     validation_loader = DataLoader(
         validation_dataset,
-        batch_size=config["model"]["batch_size"],
+        batch_size=experiment[
+            "batch_size"
+        ],
         shuffle=False,
-        num_workers=config["model"]["num_workers"],
-        pin_memory=torch.cuda.is_available(),
+        num_workers=runtime[
+            "num_workers"
+        ],
+        pin_memory=runtime[
+            "pin_memory"
+        ],
     )
 
-    print("Train batches:", len(train_loader))
-    print("Validation batches:", len(validation_loader))
+    print(
+        "Train batches:",
+        len(train_loader),
+    )
+
+    print(
+        "Validation batches:",
+        len(validation_loader),
+    )
 
     # ---------------------------------------------------------
     # Model
     # ---------------------------------------------------------
+
     model = build_efficientnet_b0(
-        pretrained=config["model"]["pretrained"]
+        pretrained=experiment[
+            "pretrained"
+        ]
     ).to(device)
 
-    print("Model: EfficientNetB0")
-    print("Number of classes:", len(classes))
+    print(
+        "Model:",
+        experiment["model_name"],
+    )
+
+    print(
+        "Number of classes:",
+        experiment["class_count"],
+    )
 
     # ---------------------------------------------------------
     # Loss
     # ---------------------------------------------------------
+
     criterion = nn.CrossEntropyLoss()
 
     # ---------------------------------------------------------
     # Optimizer
     # ---------------------------------------------------------
+
     optimizer = torch.optim.Adam(
         model.parameters(),
-        lr=config["model"]["learning_rate"],
+        lr=experiment[
+            "learning_rate"
+        ],
     )
 
     # ---------------------------------------------------------
-    # Training configuration
+    # Training settings
     # ---------------------------------------------------------
-    epochs = config["model"]["epochs"]
 
-    output_dir = (
-        Path(config["paths"]["results_dir"])
-        / "phase3"
-        / "efficientnet_b0_baseline"
+    epochs = experiment["epochs"]
+
+    output_dir = Path(
+        experiment["output_dir"]
     )
 
     output_dir.mkdir(
@@ -308,15 +415,34 @@ def main() -> None:
     best_val_f1 = -1.0
 
     print("\nStarting training...")
-    print("Epochs:", epochs)
-    print("Batch size:", config["model"]["batch_size"])
-    print("Learning rate:", config["model"]["learning_rate"])
-    print("Output directory:", output_dir)
+    print(
+        "Epochs:",
+        epochs,
+    )
+
+    print(
+        "Batch size:",
+        experiment["batch_size"],
+    )
+
+    print(
+        "Learning rate:",
+        experiment["learning_rate"],
+    )
+
+    print(
+        "Output directory:",
+        output_dir,
+    )
 
     # ---------------------------------------------------------
     # Training loop
     # ---------------------------------------------------------
-    for epoch in range(1, epochs + 1):
+
+    for epoch in range(
+        1,
+        epochs + 1,
+    ):
 
         train_loss = train_one_epoch(
             model,
@@ -326,59 +452,86 @@ def main() -> None:
             device,
         )
 
-        validation_metrics = validate_one_epoch(
-            model,
-            validation_loader,
-            criterion,
-            device,
-            classes,
+        validation_metrics = (
+            validate_one_epoch(
+                model,
+                validation_loader,
+                criterion,
+                device,
+                classes,
+            )
         )
 
-        print(f"\nEpoch {epoch}/{epochs}")
-        print(f"Train Loss: {train_loss:.6f}")
+        print(
+            f"\nEpoch {epoch}/{epochs}"
+        )
+
+        print(
+            f"Train Loss: "
+            f"{train_loss:.6f}"
+        )
+
         print(
             f"Validation Loss: "
             f"{validation_metrics['loss']:.6f}"
         )
+
         print(
             f"Validation Accuracy: "
             f"{validation_metrics['accuracy']:.6f}"
         )
+
         print(
             f"Validation Macro F1: "
             f"{validation_metrics['macro_f1']:.6f}"
         )
 
         # -----------------------------------------------------
-        # Save best checkpoint
+        # Best checkpoint
         # -----------------------------------------------------
-        if validation_metrics["macro_f1"] > best_val_f1:
 
-            best_val_f1 = validation_metrics["macro_f1"]
+        if (
+            validation_metrics["macro_f1"]
+            > best_val_f1
+        ):
+
+            best_val_f1 = (
+                validation_metrics[
+                    "macro_f1"
+                ]
+            )
 
             save_checkpoint(
-                output_dir / "best_checkpoint.pt",
+                output_dir
+                / "best_checkpoint.pt",
                 model,
                 optimizer,
                 epoch,
                 config,
             )
 
-            print("Best checkpoint saved.")
+            print(
+                "Best checkpoint saved."
+            )
 
     # ---------------------------------------------------------
-    # Save experiment configuration
+    # Save configuration
     # ---------------------------------------------------------
+
     save_experiment_config(
         output_dir,
         config,
     )
 
-    print("\nTraining completed.")
+    print(
+        "\nTraining completed."
+    )
+
     print(
         "Best validation Macro F1:",
         best_val_f1,
     )
+
     print(
         "Output directory:",
         output_dir,
