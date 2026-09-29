@@ -160,12 +160,20 @@ def main() -> None:
         default="configs/phase3_attention.yaml",
         help="Path to the Phase 3 attention configuration YAML.",
     )
+    parser.add_argument(
+        "--epochs",
+        type=int,
+        default=None,
+        help="Override the epoch count in the experiment configuration.",
+    )
     args = parser.parse_args()
 
     with Path(args.config).open("r", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
 
     experiment = config["experiment"]
+    if args.epochs is not None:
+        experiment["epochs"] = args.epochs
     data_config = config["data"]
     runtime = config["runtime"]
 
