@@ -23,13 +23,14 @@ METRIC_KEYS = (
     "macro_f1",
     "weighted_f1",
 )
+PER_CLASS_METRIC_KEYS = ("precision", "recall", "f1")
 
 
 def _load_results(path: Path, model_label: str) -> dict[str, Any]:
     if not path.is_file():
         raise FileNotFoundError(
             f"{model_label} test results not found: {path}. "
-            "Run the corresponding official test evaluation first."
+            "Copy the saved test_results.yaml into the project results directory."
         )
     with path.open("r", encoding="utf-8") as results_file:
         results = yaml.safe_load(results_file)
@@ -41,38 +42,51 @@ def _load_results(path: Path, model_label: str) -> dict[str, Any]:
 def _validate_results(
     results: dict[str, Any],
     model_label: str,
-) -> tuple[list[str], dict[str, Any], list[list[int]]]:
+) -> tuple[list[str], dict[str, Any], list[list[int]], str]:
     class_names = results.get("class_names")
     metrics = results.get("metrics")
     sample_count = results.get("test_sample_count")
+    split_path = results.get("test_split")
 
     if sample_count != OFFICIAL_TEST_SAMPLE_COUNT:
         raise ValueError(
             f"{model_label} result sample count is {sample_count!r}; "
             f"expected {OFFICIAL_TEST_SAMPLE_COUNT}."
         )
+    if not isinstance(split_path, str) or not split_path:
+        raise ValueError(f"{model_label} results must identify the test split.")
     if not isinstance(class_names, list) or len(class_names) != 10:
         raise ValueError(f"{model_label} results must list exactly 10 class names.")
-    if any(not isinstance(name, str) for name in class_names):
-        raise ValueError(f"{model_label} class names must all be strings.")
+    if any(not isinstance(name, str) or not name for name in class_names):
+        raise ValueError(f"{model_label} class names must all be non-empty strings.")
+    if len(set(class_names)) != len(class_names):
+        raise ValueError(f"{model_label} class list contains duplicates.")
     if not isinstance(metrics, dict):
         raise ValueError(f"{model_label} results must contain a metrics mapping.")
-    missing_metrics = [key for key in METRIC_KEYS if key not in metrics]
-    if missing_metrics:
-        raise ValueError(
-            f"{model_label} results are missing metric(s): {', '.join(missing_metrics)}."
-        )
+
+    for key in METRIC_KEYS:
+        value = metrics.get(key)
+        if not isinstance(value, (int, float)) or isinstance(value, bool):
+            raise ValueError(
+                f"{model_label} results require a numeric '{key}' metric."
+            )
+
     per_class = metrics.get("per_class")
     if not isinstance(per_class, dict):
         raise ValueError(f"{model_label} results must contain per-class metrics.")
-    missing_classes = [name for name in class_names if name not in per_class]
-    if missing_classes:
-        raise ValueError(
-            f"{model_label} per-class metrics are missing: {', '.join(missing_classes)}."
-        )
-    for name in class_names:
-        if "f1" not in per_class[name]:
-            raise ValueError(f"{model_label} per-class metrics lack F1 for {name}.")
+    for class_name in class_names:
+        class_metrics = per_class.get(class_name)
+        if not isinstance(class_metrics, dict):
+            raise ValueError(
+                f"{model_label} per-class metrics are missing for {class_name}."
+            )
+        for key in (*PER_CLASS_METRIC_KEYS, "support"):
+            value = class_metrics.get(key)
+            if not isinstance(value, (int, float)) or isinstance(value, bool):
+                raise ValueError(
+                    f"{model_label} per-class '{key}' is missing or non-numeric "
+                    f"for {class_name}."
+                )
 
     matrix = metrics.get("confusion_matrix")
     if (
@@ -88,14 +102,48 @@ def _validate_results(
         for row in matrix
         for value in row
     ):
-        raise ValueError(f"{model_label} confusion matrix must contain nonnegative integers.")
+        raise ValueError(
+            f"{model_label} confusion matrix must contain nonnegative integers."
+        )
     if sum(map(sum, matrix)) != OFFICIAL_TEST_SAMPLE_COUNT:
         raise ValueError(
             f"{model_label} confusion matrix total must equal "
             f"{OFFICIAL_TEST_SAMPLE_COUNT}."
         )
+    if [
+        sum(row)
+        for row in matrix
+    ] != [int(per_class[name]["support"]) for name in class_names]:
+        raise ValueError(
+            f"{model_label} per-class support values do not match confusion-matrix row totals."
+        )
 
-    return class_names, metrics, matrix
+    return class_names, metrics, matrix, split_path
+
+
+def _count_errors(matrix: list[list[int]]) -> dict[str, int]:
+    correct = sum(matrix[index][index] for index in range(len(matrix)))
+    return {
+        "correct": correct,
+        "incorrect": OFFICIAL_TEST_SAMPLE_COUNT - correct,
+        "total_errors": OFFICIAL_TEST_SAMPLE_COUNT - correct,
+    }
+
+
+def _misclassifications(
+    matrix: list[list[int]],
+    class_names: list[str],
+) -> list[dict[str, Any]]:
+    return [
+        {
+            "true_class": class_names[true_index],
+            "predicted_class": class_names[predicted_index],
+            "count": count,
+        }
+        for true_index, row in enumerate(matrix)
+        for predicted_index, count in enumerate(row)
+        if true_index != predicted_index and count > 0
+    ]
 
 
 def build_comparison(
@@ -103,163 +151,201 @@ def build_comparison(
     attention_results: dict[str, Any],
 ) -> dict[str, Any]:
     """Validate and combine saved model results using the fixed class order."""
-    baseline_classes, baseline_metrics, baseline_matrix = _validate_results(
-        baseline_results, "Baseline"
+    baseline_classes, baseline_metrics, baseline_matrix, baseline_split = (
+        _validate_results(baseline_results, "Baseline")
     )
-    attention_classes, attention_metrics, attention_matrix = _validate_results(
-        attention_results, "Attention"
+    attention_classes, attention_metrics, attention_matrix, attention_split = (
+        _validate_results(attention_results, "Dynamic attention")
     )
     if baseline_classes != attention_classes:
         raise ValueError(
-            "Class order mismatch between baseline and attention test results; "
-            "cannot compare per-class metrics or confusion matrices."
+            "Class order mismatch between baseline and dynamic-attention "
+            "results; per-class metrics and confusion matrices cannot be compared."
+        )
+    if baseline_split != attention_split:
+        raise ValueError(
+            f"Test split mismatch: baseline uses {baseline_split!r}, "
+            f"dynamic attention uses {attention_split!r}."
         )
 
-    aggregate = {
-        key: {
-            "baseline": float(baseline_metrics[key]),
-            "attention": float(attention_metrics[key]),
-            "attention_minus_baseline": (
-                float(attention_metrics[key]) - float(baseline_metrics[key])
-            ),
-        }
+    aggregate_baseline = {
+        key: float(baseline_metrics[key]) for key in METRIC_KEYS
+    }
+    aggregate_attention = {
+        key: float(attention_metrics[key]) for key in METRIC_KEYS
+    }
+    aggregate_delta = {
+        key: aggregate_attention[key] - aggregate_baseline[key]
         for key in METRIC_KEYS
     }
-    per_class_f1 = {
-        class_name: {
-            "baseline_f1": float(baseline_metrics["per_class"][class_name]["f1"]),
-            "attention_f1": float(attention_metrics["per_class"][class_name]["f1"]),
-            "attention_minus_baseline": (
-                float(attention_metrics["per_class"][class_name]["f1"])
-                - float(baseline_metrics["per_class"][class_name]["f1"])
-            ),
-        }
-        for class_name in baseline_classes
-    }
 
-    confusion_changes = []
-    row_prediction_count_changes = []
-    for actual_index, actual_class in enumerate(baseline_classes):
-        for predicted_index, predicted_class in enumerate(baseline_classes):
-            baseline_count = baseline_matrix[actual_index][predicted_index]
-            attention_count = attention_matrix[actual_index][predicted_index]
-            difference = attention_count - baseline_count
-            if difference:
-                confusion_changes.append(
-                    {
-                        "true_class": actual_class,
-                        "predicted_class": predicted_class,
-                        "baseline_count": baseline_count,
-                        "attention_count": attention_count,
-                        "attention_minus_baseline": difference,
-                    }
+    per_class_metrics: dict[str, Any] = {}
+    for class_name in baseline_classes:
+        baseline_class = baseline_metrics["per_class"][class_name]
+        attention_class = attention_metrics["per_class"][class_name]
+        per_class_metrics[class_name] = {
+            "baseline": {
+                **{
+                    key: float(baseline_class[key])
+                    for key in PER_CLASS_METRIC_KEYS
+                },
+                "support": int(baseline_class["support"]),
+            },
+            "dynamic_attention": {
+                **{
+                    key: float(attention_class[key])
+                    for key in PER_CLASS_METRIC_KEYS
+                },
+                "support": int(attention_class["support"]),
+            },
+            "delta": {
+                key: (
+                    float(attention_class[key]) - float(baseline_class[key])
                 )
+                for key in PER_CLASS_METRIC_KEYS
+            },
+        }
+        if int(baseline_class["support"]) != int(attention_class["support"]):
+            raise ValueError(
+                f"Per-class support differs for {class_name}: "
+                f"baseline={baseline_class['support']}, "
+                f"dynamic attention={attention_class['support']}."
+            )
 
-        baseline_row = baseline_matrix[actual_index]
-        attention_row = attention_matrix[actual_index]
-        minimum_changed_predictions = sum(
-            max(0, baseline_row[index] - attention_row[index])
-            for index in range(len(baseline_classes))
-        )
-        row_prediction_count_changes.append(
+    baseline_error_counts = _count_errors(baseline_matrix)
+    attention_error_counts = _count_errors(attention_matrix)
+    misclassification_pairs = []
+    baseline_pairs = {
+        (item["true_class"], item["predicted_class"]): item["count"]
+        for item in _misclassifications(baseline_matrix, baseline_classes)
+    }
+    attention_pairs = {
+        (item["true_class"], item["predicted_class"]): item["count"]
+        for item in _misclassifications(attention_matrix, attention_classes)
+    }
+    for true_class, predicted_class in sorted(
+        set(baseline_pairs) | set(attention_pairs)
+    ):
+        baseline_count = baseline_pairs.get((true_class, predicted_class), 0)
+        attention_count = attention_pairs.get((true_class, predicted_class), 0)
+        misclassification_pairs.append(
             {
-                "true_class": actual_class,
-                "baseline_correct": baseline_row[actual_index],
-                "attention_correct": attention_row[actual_index],
-                "attention_minus_baseline_correct": (
-                    attention_row[actual_index] - baseline_row[actual_index]
-                ),
-                "minimum_changed_predictions_inferred_from_counts": (
-                    minimum_changed_predictions
-                ),
+                "true_class": true_class,
+                "predicted_class": predicted_class,
+                "baseline_count": baseline_count,
+                "dynamic_attention_count": attention_count,
+                "delta": attention_count - baseline_count,
             }
         )
 
-    baseline_misclassified = sum(
-        count
-        for row_index, row in enumerate(baseline_matrix)
-        for column_index, count in enumerate(row)
-        if row_index != column_index
-    )
-    attention_misclassified = sum(
-        count
-        for row_index, row in enumerate(attention_matrix)
-        for column_index, count in enumerate(row)
-        if row_index != column_index
-    )
-
+    error_delta = {
+        key: attention_error_counts[key] - baseline_error_counts[key]
+        for key in ("correct", "incorrect")
+    }
     return {
-        "dataset_context": "Controlled PlantVillage official test-set results",
-        "test_sample_count": OFFICIAL_TEST_SAMPLE_COUNT,
-        "class_names_in_matrix_order": baseline_classes,
-        "aggregate_metrics": aggregate,
-        "per_class_f1": per_class_f1,
-        "confusion_matrix_comparison": {
-            "baseline_matrix": baseline_matrix,
-            "attention_matrix": attention_matrix,
-            "misclassified_sample_counts": {
-                "baseline": baseline_misclassified,
-                "attention": attention_misclassified,
-                "attention_minus_baseline": (
-                    attention_misclassified - baseline_misclassified
+        "dataset_context": (
+            "Controlled PlantVillage test-set results; these results do not "
+            "establish real-world field reliability."
+        ),
+        "experiment": {
+            "baseline": {
+                "name": baseline_results.get("model_name", "EfficientNetB0"),
+                "results_file": str(BASELINE_RESULTS_PATH),
+            },
+            "proposed": {
+                "name": attention_results.get(
+                    "model_name", "EfficientNetB0DynamicAttention"
+                ),
+                "results_file": str(ATTENTION_RESULTS_PATH),
+            },
+        },
+        "dataset": {
+            "test_samples": OFFICIAL_TEST_SAMPLE_COUNT,
+            "test_split": baseline_split,
+            "class_count": len(baseline_classes),
+            "classes": baseline_classes,
+        },
+        "aggregate_metrics": {
+            "baseline": aggregate_baseline,
+            "dynamic_attention": aggregate_attention,
+            "delta": aggregate_delta,
+        },
+        "per_class_metrics": per_class_metrics,
+        "confusion_matrix": {
+            "class_order": baseline_classes,
+            "baseline": baseline_matrix,
+            "dynamic_attention": attention_matrix,
+        },
+        "error_analysis": {
+            "baseline": {
+                **baseline_error_counts,
+                "misclassifications": _misclassifications(
+                    baseline_matrix, baseline_classes
                 ),
             },
-            "cell_count_changes": confusion_changes,
-            "per_true_class_summary": row_prediction_count_changes,
-            "interpretation_note": (
-                "Confusion matrices provide aggregate counts, not sample identities. "
-                "The minimum changed-prediction counts are inferred from per-class "
-                "prediction-count differences and do not identify which images changed."
-            ),
+            "dynamic_attention": {
+                **attention_error_counts,
+                "misclassifications": _misclassifications(
+                    attention_matrix, attention_classes
+                ),
+            },
+            "delta": error_delta,
+            "misclassification_pair_comparison": misclassification_pairs,
         },
+        "comparison_notes": [
+            "Both result files report the same official test split and sample count.",
+            "Class ordering is validated before per-class and confusion-matrix comparisons.",
+            "Metric deltas are calculated as dynamic attention minus baseline.",
+            "Misclassification entries describe aggregate confusion-matrix counts, not image identities.",
+            "These controlled PlantVillage test-set results do not establish real-world field reliability.",
+        ],
     }
 
 
 def print_comparison(comparison: dict[str, Any]) -> None:
+    aggregate = comparison["aggregate_metrics"]
     print(comparison["dataset_context"])
-    print(f"Official test samples: {comparison['test_sample_count']}")
-    print()
-    print(f"{'Metric':<20}{'Baseline':>14}{'Attention':>14}{'Attention - Baseline':>24}")
-    for name, values in comparison["aggregate_metrics"].items():
+    print(f"Official test samples: {comparison['dataset']['test_samples']}\n")
+    print(
+        f"{'Metric':<24}{'Baseline':>14}"
+        f"{'Dynamic Attention':>20}{'Delta':>14}"
+    )
+    for key, label in (
+        ("accuracy", "Accuracy"),
+        ("macro_precision", "Macro Precision"),
+        ("macro_recall", "Macro Recall"),
+        ("macro_f1", "Macro F1"),
+        ("weighted_f1", "Weighted F1"),
+    ):
         print(
-            f"{name:<20}{values['baseline']:>14.6f}"
-            f"{values['attention']:>14.6f}"
-            f"{values['attention_minus_baseline']:>24.6f}"
+            f"{label:<24}{aggregate['baseline'][key]:>14.6f}"
+            f"{aggregate['dynamic_attention'][key]:>20.6f}"
+            f"{aggregate['delta'][key]:>14.6f}"
         )
 
     print("\nPer-class F1")
-    print(f"{'Class':<42}{'Baseline':>12}{'Attention':>12}{'Difference':>14}")
-    for class_name, values in comparison["per_class_f1"].items():
+    print(f"{'Class':<48}{'Baseline':>12}{'Attention':>12}{'Delta':>12}")
+    for class_name, metrics in comparison["per_class_metrics"].items():
         print(
-            f"{class_name:<42}{values['baseline_f1']:>12.6f}"
-            f"{values['attention_f1']:>12.6f}"
-            f"{values['attention_minus_baseline']:>14.6f}"
+            f"{class_name:<48}{metrics['baseline']['f1']:>12.6f}"
+            f"{metrics['dynamic_attention']['f1']:>12.6f}"
+            f"{metrics['delta']['f1']:>12.6f}"
         )
 
-    changes = comparison["confusion_matrix_comparison"]["cell_count_changes"]
-    errors = comparison["confusion_matrix_comparison"]["misclassified_sample_counts"]
+    errors = comparison["error_analysis"]
     print(
-        "\nMisclassified sample counts (aggregate): "
-        f"baseline={errors['baseline']}, attention={errors['attention']}, "
-        f"attention - baseline={errors['attention_minus_baseline']}"
-    )
-    print(f"\nConfusion-matrix cells with changed counts: {len(changes)}")
-    print(f"{'True class':<34}{'Predicted class':<34}{'Baseline':>10}{'Attention':>12}{'Delta':>9}")
-    for change in changes:
-        print(
-            f"{change['true_class']:<34}{change['predicted_class']:<34}"
-            f"{change['baseline_count']:>10}{change['attention_count']:>12}"
-            f"{change['attention_minus_baseline']:>9}"
-        )
-    print(
-        "\nAggregate confusion-matrix counts do not identify individual changed images."
+        "\nTest errors: "
+        f"baseline={errors['baseline']['incorrect']}, "
+        f"dynamic attention={errors['dynamic_attention']['incorrect']}"
     )
 
 
 def main() -> None:
-    baseline = _load_results(BASELINE_RESULTS_PATH, "Baseline")
-    attention = _load_results(ATTENTION_RESULTS_PATH, "Attention")
-    comparison = build_comparison(baseline, attention)
+    baseline_results = _load_results(BASELINE_RESULTS_PATH, "Baseline")
+    attention_results = _load_results(
+        ATTENTION_RESULTS_PATH, "Dynamic attention"
+    )
+    comparison = build_comparison(baseline_results, attention_results)
 
     COMPARISON_OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
     with COMPARISON_OUTPUT_PATH.open("w", encoding="utf-8") as output_file:
