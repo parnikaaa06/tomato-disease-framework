@@ -24,6 +24,23 @@ from PIL import Image
 import numpy as np
 
 IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+MANUAL_VISUAL_REVIEW = {
+    "evidence_source": (
+        "User-provided visual inspection of representative original/segmented pairs "
+        "and the Phase 6 final review."
+    ),
+    "candidate_collection": "PlantVillage segmented collection",
+    "candidate_collection_present": True,
+    "corresponding_original_pairs_available": True,
+    "leaf_background_segmentation_confirmed": True,
+    "observations": [
+        "The transformation removes or reduces background while retaining the complete leaf.",
+        "Disease symptoms remain within the retained leaf region.",
+        "The observed images represent leaf/background segmentation, not verified disease-lesion masks.",
+        "No explicit disease-lesion annotation source was established.",
+    ],
+    "disease_lesion_ground_truth": "NOT ESTABLISHED",
+}
 CANDIDATE_KEYWORDS = (
     "segmented",
     "segmentation",
@@ -329,30 +346,43 @@ def write_report_yaml(path: Path, report: dict[str, Any]) -> None:
 
 def decide_statuses(details: dict[str, Any]) -> dict[str, str]:
     """Return evidence-based statuses for the required audit questions."""
-    if details.get("dataset_root_status") != "exists":
-        return {
-            "A": "NOT ESTABLISHED",
-            "B": "NOT ESTABLISHED",
-            "C": "NOT ESTABLISHED",
-            "D": "NOT ESTABLISHED",
-            "E": "NOT ESTABLISHED",
-            "F": "NOT ESTABLISHED",
-            "G": "NOT ESTABLISHED",
-        }
-
     candidate_count = details.get("candidate_count", 0)
     matched_pairs = details.get("matched_pairs", 0)
     binary_like = details.get("binary_like_count", 0)
     class_coverage = details.get("class_coverage_count", 0)
     has_real_lesion_evidence = bool(details.get("lesion_evidence_verified", False))
+    manual_review = details.get("manual_visual_review", {})
+    dataset_inspected = details.get("dataset_root_status") == "exists"
 
-    status_a = "YES" if candidate_count > 0 else "NO"
-    status_b = "YES" if matched_pairs > 0 else "NO"
-    status_c = "YES" if binary_like > 0 else "NOT ESTABLISHED"
+    candidate_present = candidate_count > 0 or manual_review.get("candidate_collection_present", False)
+    pairs_available = matched_pairs > 0 or manual_review.get(
+        "corresponding_original_pairs_available", False
+    )
+    leaf_background_confirmed = bool(manual_review.get("leaf_background_segmentation_confirmed"))
+
+    status_a = "YES" if candidate_present else ("NO" if dataset_inspected else "NOT ESTABLISHED")
+    status_b = (
+        "YES (representative pairs confirmed)"
+        if pairs_available
+        else ("NO" if dataset_inspected else "NOT ESTABLISHED")
+    )
+    status_c = (
+        "YES (leaf/background only)"
+        if leaf_background_confirmed
+        else ("YES — binary-like candidate images" if binary_like > 0 else "NOT ESTABLISHED")
+    )
     status_d = "YES" if has_real_lesion_evidence else "NOT ESTABLISHED"
-    status_e = "YES" if class_coverage > 0 else "NOT ESTABLISHED"
-    status_f = "YES" if has_real_lesion_evidence and matched_pairs > 0 and class_coverage > 0 else "NOT ESTABLISHED"
-    status_g = "YES" if has_real_lesion_evidence and matched_pairs > 0 and class_coverage > 0 and candidate_count > 0 else "NOT ESTABLISHED"
+    status_e = "YES" if class_coverage > 0 and has_real_lesion_evidence else "NOT ESTABLISHED"
+    status_f = (
+        "YES"
+        if has_real_lesion_evidence and pairs_available and class_coverage > 0
+        else "NOT ESTABLISHED"
+    )
+    status_g = (
+        "JUSTIFIED"
+        if has_real_lesion_evidence and pairs_available and class_coverage > 0 and candidate_present
+        else "NOT JUSTIFIED"
+    )
 
     return {
         "A": status_a,
@@ -367,6 +397,12 @@ def decide_statuses(details: dict[str, Any]) -> dict[str, str]:
 
 def build_report(dataset_root: Path | None, source_root: Path | None) -> dict[str, Any]:
     if dataset_root is None or not dataset_root.exists():
+        questions = decide_statuses(
+            {
+                "dataset_root_status": "missing",
+                "manual_visual_review": MANUAL_VISUAL_REVIEW,
+            }
+        )
         return {
             "dataset_root": str(dataset_root) if dataset_root is not None else "NOT SET",
             "dataset_root_status": "missing",
@@ -376,21 +412,26 @@ def build_report(dataset_root: Path | None, source_root: Path | None) -> dict[st
                 "candidate_annotation_files": 0,
                 "matched_pairs": 0,
             },
-            "questions": {
-                "A": "NOT ESTABLISHED",
-                "B": "NOT ESTABLISHED",
-                "C": "NOT ESTABLISHED",
-                "D": "NOT ESTABLISHED",
-                "E": "NOT ESTABLISHED",
-                "F": "NOT ESTABLISHED",
-                "G": "NOT ESTABLISHED",
-            },
+            "questions": questions,
             "evidence": [
                 "TDF_DATASET_ROOT was not set or the configured directory does not exist.",
                 "No file-level inspection was performed because no valid source dataset root was available.",
-                "Disease-lesion segmentation ground truth remains unverified until actual files are inspected.",
+                "Manual visual review findings below were supplied for this PlantVillage dataset; they are distinct from this run's unavailable file-level inspection.",
             ],
             "candidate_collections": [],
+            "manual_visual_review": MANUAL_VISUAL_REVIEW,
+            "conclusion": (
+                "Original-to-segmented pairs are available, and visual inspection indicates "
+                "leaf/background segmentation that retains the complete leaf. Disease-lesion "
+                "annotations were not established. U-Net disease-lesion training is not justified."
+            ),
+            "decision": {
+                "original_segmented_pairing": "AVAILABLE",
+                "leaf_background_segmentation": "AVAILABLE",
+                "verified_disease_lesion_masks": "NOT ESTABLISHED",
+                "disease_lesion_segmentation_dataset": "NOT AVAILABLE",
+                "unet_disease_lesion_training": "NOT JUSTIFIED",
+            },
             "notes": [
                 "This report intentionally does not infer disease-lesion labels from directory names or binary-like image appearance.",
             ],
@@ -428,15 +469,17 @@ def build_report(dataset_root: Path | None, source_root: Path | None) -> dict[st
             "binary_like_count": binary_like_total,
             "class_coverage_count": class_coverage_count,
             "lesion_evidence_verified": False,
+            "manual_visual_review": MANUAL_VISUAL_REVIEW,
         }
     )
 
     conclusion = (
-        "Disease-lesion annotations were not established. "
-        "Candidate images appear consistent with leaf/background segmentation in some cases, but this does not constitute verified lesion ground truth. "
-        "U-Net disease-lesion training is not justified using the currently verified annotations."
-        if all_questions["D"] == "NO"
-        else "The current audit does not establish disease-lesion annotation validity."
+        "Original-to-segmented pairs are available. Visual inspection of representative pairs "
+        "shows background removal or reduction while retaining the complete leaf; disease "
+        "symptoms remain within the retained leaf. The available images represent "
+        "leaf/background segmentation, not verified disease-lesion masks. No explicit "
+        "disease-lesion annotation source was established. U-Net disease-lesion training is "
+        "not justified using the currently established annotations."
     )
 
     report = {
@@ -454,15 +497,24 @@ def build_report(dataset_root: Path | None, source_root: Path | None) -> dict[st
             "candidate_collections_detected": len(collection_rows),
         },
         "questions": all_questions,
+        "manual_visual_review": MANUAL_VISUAL_REVIEW,
         "evidence": [
             "Candidate collections were discovered by name and path inspection only; names were never treated as proof of disease-lesion masks.",
             "The script checked file counts, extensions, dimensions, image mode, sampled pixel statistics, and candidate-to-source pairing compatibility.",
             "Binary-like images were flagged as binary-like only when the sampled pixel distribution was sparse; binary appearance alone does not confirm disease-region labels.",
-            "No explicit disease-lesion ground truth source was verified from the available files.",
+            "Manual visual review found leaf/background segmentation in representative original/segmented pairs; this is not disease-lesion ground truth.",
+            "No explicit disease-lesion ground truth source was established.",
         ],
         "candidate_collections": collection_rows,
         "pairing": pairing,
         "conclusion": conclusion,
+        "decision": {
+            "original_segmented_pairing": "AVAILABLE",
+            "leaf_background_segmentation": "AVAILABLE",
+            "verified_disease_lesion_masks": "NOT ESTABLISHED",
+            "disease_lesion_segmentation_dataset": "NOT AVAILABLE",
+            "unet_disease_lesion_training": "NOT JUSTIFIED",
+        },
         "notes": [
             "This audit is intentionally conservative and does not infer disease lesions from segmentation-like foreground/background regions.",
             "Manual visual inspection is required to confirm whether any candidate images correspond to lesion annotations versus leaf/background segmentation.",
