@@ -34,7 +34,7 @@ This project is an empty, scientific baseline scaffold for a Level 1 prototype f
 - Phase 4: EfficientNet-B0 + dynamic self-attention
 - Phase 5: evaluation and comparison
 - Phase 6: segmentation feasibility only if valid annotations exist
-- Phase 7: severity estimation
+- Phase 7: severity/progression feasibility audit; estimation only if validated targets are available
 - Phase 8: Grad-CAM / Score-CAM
 - Phase 9: structured VLM explanation
 - Phase 10: knowledge-grounded recommendation
