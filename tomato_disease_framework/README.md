@@ -88,6 +88,35 @@ drive.mount("/content/drive")
 Grad-CAM visualizes model sensitivity for the selected class; its heatmap is
 not a lesion segmentation mask or evidence of disease localization.
 
+### Balanced-sample evaluation
+
+To create Grad-CAM visualizations and per-image evaluation metadata for the
+official Phase 2 test split, run from the repository root:
+
+```bash
+python -m evaluation.evaluate_gradcam \
+  --dataset-root "/path/to/PlantVillage/tomato" \
+  --checkpoint "results/phase3/efficientnet_b0_baseline/best_checkpoint.pt" \
+  --output-dir "results/phase8/gradcam_evaluation"
+```
+
+`--config` defaults to `configs/phase3_baseline.yaml`; `--dataset-root`
+defaults to the configured environment variable (`TDF_DATASET_ROOT`);
+`--output-dir` defaults to `results/phase8/gradcam_evaluation`; and
+`--samples-per-class` defaults to 5. The `--checkpoint` argument is required
+because the Phase 3 checkpoint may be stored outside GitHub. The deterministic
+sample uses the Phase 3 configured seed unless the sampling helper is called
+directly with another seed. The command requires the official test CSV to
+contain exactly 2,725 rows and all 10 configured classes; it never samples
+from training or validation data.
+
+The output directory contains one original/heatmap/overlay PNG per selected
+image, `gradcam_evaluation.csv` with the image paths, true/predicted classes,
+correctness, and visualization path, and `gradcam_evaluation_summary.json`
+with the balanced sample counts, correct predictions, accuracy, and input
+artifact paths. Reported accuracy applies only to this balanced sample, not
+the complete test set. Grad-CAM heatmaps do not validate lesion segmentation.
+
 ## Important notes
 
 - Do not add PlantVillage images to version control.
