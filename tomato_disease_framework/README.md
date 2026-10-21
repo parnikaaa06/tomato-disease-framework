@@ -49,6 +49,45 @@ Python and PyTorch are used, with a configurable device selection:
 - `cuda` if available
 - otherwise `cpu`
 
+## Phase 8: Grad-CAM demonstration
+
+Run the demonstration from the repository root so Python resolves the project
+packages as modules:
+
+```bash
+python -m evaluation.visualize_gradcam \
+  --dataset-root "/path/to/PlantVillage/tomato" \
+  --checkpoint "results/phase3/efficientnet_b0_baseline/best_checkpoint.pt" \
+  --output "results/phase8/gradcam_example.png"
+```
+
+The dataset root must be the parent directory referenced by paths in
+`data/splits/test.csv`. The script uses that official test split and the
+Phase 3 resize, tensor conversion, and ImageNet normalization; it does not
+create a new split or train a model. The checkpoint is not expected to be
+versioned with the repository. Paths can be supplied explicitly as above, or
+the dataset root can be provided through the configured `TDF_DATASET_ROOT`
+environment variable. The output path can point to a mounted Google Drive.
+
+In Colab, mount Drive and run the module from the cloned repository root. Use
+the actual dataset and checkpoint locations in your Drive:
+
+```python
+from google.colab import drive
+drive.mount("/content/drive")
+%cd /content/tomato_disease_framework
+```
+
+```bash
+!python -m evaluation.visualize_gradcam \
+  --dataset-root "/content/drive/MyDrive/PlantVillage/tomato" \
+  --checkpoint "/content/drive/MyDrive/tomato-disease/results/phase3/efficientnet_b0_baseline/best_checkpoint.pt" \
+  --output "/content/drive/MyDrive/tomato-disease/phase8/gradcam_example.png"
+```
+
+Grad-CAM visualizes model sensitivity for the selected class; its heatmap is
+not a lesion segmentation mask or evidence of disease localization.
+
 ## Important notes
 
 - Do not add PlantVillage images to version control.
