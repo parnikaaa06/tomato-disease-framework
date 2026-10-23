@@ -156,6 +156,43 @@ OUTPUT_SCHEMA: dict[str, Any] = {
     },
 }
 
+def _gemini_compatible_schema(schema: dict[str, Any]) -> dict[str, Any]:
+    """Retain Gemini structured-output JSON Schema keywords from the contract."""
+    supported_keywords = {"type", "required", "properties", "items", "enum"}
+    compatible = {
+        key: value
+        for key, value in schema.items()
+        if key in supported_keywords and key not in {"properties", "items"}
+    }
+    if "properties" in schema:
+        compatible["properties"] = {
+            key: _gemini_compatible_schema(value)
+            for key, value in schema["properties"].items()
+        }
+    if "items" in schema:
+        compatible["items"] = _gemini_compatible_schema(schema["items"])
+    return compatible
+
+
+_BACKEND_RESPONSE_CONTRACT: dict[str, Any] = {
+    "type": "object",
+    "additionalProperties": False,
+    "required": ["observations", "summary", "claims"],
+    "properties": {
+        "observations": OUTPUT_SCHEMA["properties"]["visual_evidence"]["properties"][
+            "observations"
+        ],
+        "summary": OUTPUT_SCHEMA["properties"]["explanation"]["properties"][
+            "summary"
+        ],
+        "claims": OUTPUT_SCHEMA["properties"]["explanation"]["properties"]["claims"],
+    },
+}
+
+BACKEND_RESPONSE_SCHEMA: dict[str, Any] = _gemini_compatible_schema(
+    _BACKEND_RESPONSE_CONTRACT
+)
+
 
 def _validate_value(value: Any, schema: dict[str, Any], path: str) -> None:
     expected_type = schema["type"]
@@ -202,6 +239,11 @@ def _validate_value(value: Any, schema: dict[str, Any], path: str) -> None:
     elif expected_type == "array":
         for index, item in enumerate(value):
             _validate_value(item, schema["items"], f"{path}[{index}]")
+
+
+def validate_backend_response(response: Any) -> None:
+    """Validate only the VLM-owned response using the shared output contract."""
+    _validate_value(response, _BACKEND_RESPONSE_CONTRACT, "$.backend_response")
 
 
 def validate_output(

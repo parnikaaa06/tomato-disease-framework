@@ -11,7 +11,11 @@ from torch import nn
 
 from explainability.gradcam import generate_gradcam
 from vlm.prompts import EXPLANATION_PROMPT
-from vlm.schema import REQUIRED_LIMITATIONS, validate_output
+from vlm.schema import (
+    REQUIRED_LIMITATIONS,
+    validate_backend_response,
+    validate_output,
+)
 
 
 MODEL_ID = "efficientnet_b0_phase3_baseline"
@@ -135,12 +139,12 @@ def generate_structured_explanation(
         backend_response = backend.explain(request)
         if not isinstance(backend_response, Mapping):
             raise TypeError("Backend response must be a JSON object mapping.")
-        response_fields = set(backend_response)
-        if response_fields != BACKEND_RESPONSE_FIELDS:
+        if set(backend_response) != BACKEND_RESPONSE_FIELDS:
             raise ValueError(
                 "Backend response must contain exactly "
                 "'observations', 'summary', and 'claims'."
             )
+        validate_backend_response(dict(backend_response))
 
         classifier_output = asdict(classifier)
         output: dict[str, Any] = {

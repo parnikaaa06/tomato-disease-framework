@@ -117,6 +117,109 @@ with the balanced sample counts, correct predictions, accuracy, and input
 artifact paths. Reported accuracy applies only to this balanced sample, not
 the complete test set. Grad-CAM heatmaps do not validate lesion segmentation.
 
+## Phase 9: structured Gemini vision explanations
+
+The provider-neutral orchestrator can be explicitly given a Gemini backend.
+The Phase 3 classifier remains the source of the predicted class and
+uncalibrated softmax score; Gemini generates only visual observations and
+evidence-linked explanation claims. The application validates the response
+locally and always withholds recommendations because no verified
+disease-specific recommendation source is configured. Human review remains
+necessary: schema-valid model output is not proof that a natural-language
+claim is factually correct.
+
+### Install and configure
+
+Install the project dependencies, including Google's official `google-genai`
+SDK (`>=2.0.0,<3.0.0`):
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
+Keep it out of source files, notebooks, YAML, Git, and logs. The backend reads
+`GEMINI_API_KEY` and uses `GEMINI_MODEL` when set; the default model identifier
+is `gemini-3.8-flash` (availability can change). For a local PowerShell
+session, set values without writing them to the repository:
+
+```powershell
+$secureKey = Read-Host "Gemini API key" -AsSecureString
+$env:GEMINI_API_KEY = [System.Net.NetworkCredential]::new("", $secureKey).Password
+Remove-Variable secureKey
+$env:GEMINI_MODEL = "gemini-3.8-flash"
+```
+
+In Colab, save the key under **Secrets** (for example, `GEMINI_API_KEY`) and
+load it into the runtime environment without printing it:
+
+```python
+import os
+from google.colab import userdata
+
+os.environ["GEMINI_API_KEY"] = userdata.get("GEMINI_API_KEY")
+os.environ["GEMINI_MODEL"] = "gemini-3.8-flash"
+```
+
+### Offline tests and opt-in API smoke test
+
+The default test run is offline and excludes the separately marked real-API
+smoke test:
+
+```bash
+python -m pytest -v
+```
+
+To deliberately send one request with synthetic images and verify the live
+Gemini structured-output configuration, set the key and opt-in flag, then run:
+
+```bash
+RUN_GEMINI_INTEGRATION=1 python -m pytest -o addopts= \
+  -m gemini_integration -q tests/test_gemini_integration.py
+```
+
+In Colab, after loading the key from Secrets as above:
+
+```python
+os.environ["RUN_GEMINI_INTEGRATION"] = "1"
+```
+
+```bash
+!python -m pytest -o addopts= -m gemini_integration -q tests/test_gemini_integration.py
+```
+
+This smoke test consumes Gemini quota and may incur charges. The configured
+backend uses a 30-second request timeout and at most two attempts; it retries
+only transient network/service errors, timeouts, and HTTP 408/429/5xx once.
+Authentication and permission failures are not retried. Quotas, pricing,
+supported model identifiers, and availability depend on the Google account
+and can change; check current Google AI Studio/API terms and billing before
+use.
+
+For an application call, load the existing Phase 3 model and checkpoint,
+prepare `input_tensor` with Phase 3 test transforms, and retain the original
+PIL image. Then inject the backend explicitly:
+
+```python
+from vlm.explanation import generate_structured_explanation
+from vlm.gemini_backend import GeminiBackend
+
+backend = GeminiBackend()
+try:
+    result = generate_structured_explanation(
+        model, input_tensor, original_image, class_names, backend
+    )
+finally:
+    backend.close()
+```
+
+The original image and a grayscale Grad-CAM heatmap, plus classifier context,
+are sent to Google's cloud service for inference. Do not send images unless
+you have permission and accept the provider's applicable data handling terms.
+The heatmap is attribution evidence, not a lesion mask. Outputs are not
+validated against disease-specific ground truth, do not provide treatments,
+and do not establish field reliability; review every explanation before use.
+
 ## Important notes
 
 - Do not add PlantVillage images to version control.
