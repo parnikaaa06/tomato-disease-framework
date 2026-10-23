@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import re
 from typing import Any
 
 
@@ -193,6 +194,93 @@ BACKEND_RESPONSE_SCHEMA: dict[str, Any] = _gemini_compatible_schema(
     _BACKEND_RESPONSE_CONTRACT
 )
 
+_DISEASE_REFERENCE = (
+    r"(?:disease|infection|infected|diseased|pathogen|blight|mosaic|mildew|"
+    r"mold|rot|canker|wilt|virus|Tomato___[A-Za-z0-9_]+)"
+)
+_NEGATED_CONFIRMATION_PATTERNS = (
+    re.compile(
+        r"\b(?:does|do|did|is|are|was|were|has|have)\s+not\s+"
+        r"(?:definitively\s+)?(?:confirm|prove|diagnos\w*|show|have)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:cannot|can't|never)\s+"
+        r"(?:definitively\s+)?(?:confirm|prove|diagnos\w*|show|have)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b{_DISEASE_REFERENCE}\b.{{0,30}}\b(?:is|was|has been)\s+not\s+"
+        r"(?:definitively\s+)?(?:confirmed|proven|diagnosed|established)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:is|are|was|were)\s+not\s+(?:definitively\s+)?"
+        rf"(?:a|an|the)?\s*{_DISEASE_REFERENCE}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bno\s+(?:definitive\s+)?evidence\b[^,.!?]{0,45}"
+        r"\b(?:confirm\w*|prove\w*|diagnos\w*|confirmed|proven|diagnosed)\b",
+        re.IGNORECASE,
+    ),
+)
+_DEFINITIVE_DISEASE_PATTERNS = (
+    re.compile(
+        rf"\b(?:confirm\w*|proven|prove\w*|diagnos\w*)\b.{{0,70}}"
+        rf"\b{_DISEASE_REFERENCE}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b{_DISEASE_REFERENCE}\b.{{0,35}}"
+        r"\b(?:is|was|has been|remains)\s+"
+        r"(?:definitively\s+)?(?:confirmed|proven|diagnosed|present)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:this|the leaf|the plant|the image|the sample|it)\b.{{0,25}}"
+        r"\b(?:definitely|certainly|clearly|visibly)?\s*"
+        r"(?:has|shows|is infected with|is diseased with|is positive for)\b"
+        rf".{{0,30}}\b{_DISEASE_REFERENCE}\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        rf"\b(?:this|the leaf|the plant|the image|the sample|it)\b.{{0,15}}"
+        r"\b(?:is|are|was|were)\s+"
+        r"(?:definitely|certainly|clearly)?\s*(?:a|an|the)?\s*"
+        rf"\b{_DISEASE_REFERENCE}\b",
+        re.IGNORECASE,
+    ),
+)
+
+
+def _reject_definitive_disease_confirmation(text: str, path: str) -> None:
+    reviewable_text = text
+    for pattern in _NEGATED_CONFIRMATION_PATTERNS:
+        reviewable_text = pattern.sub(" ", reviewable_text)
+    if any(pattern.search(reviewable_text) for pattern in _DEFINITIVE_DISEASE_PATTERNS):
+        raise ValueError(
+            f"{path} must not claim definitive disease confirmation from image "
+            "or classifier evidence."
+        )
+
+
+def _validate_explanation_language(
+    observations: list[dict[str, Any]],
+    summary: str,
+    claims: list[dict[str, Any]],
+    path: str,
+) -> None:
+    for index, observation in enumerate(observations):
+        _reject_definitive_disease_confirmation(
+            observation["text"], f"{path}.observations[{index}].text"
+        )
+    _reject_definitive_disease_confirmation(summary, f"{path}.summary")
+    for index, claim in enumerate(claims):
+        _reject_definitive_disease_confirmation(
+            claim["text"], f"{path}.claims[{index}].text"
+        )
+
 
 def _validate_value(value: Any, schema: dict[str, Any], path: str) -> None:
     expected_type = schema["type"]
@@ -244,6 +332,12 @@ def _validate_value(value: Any, schema: dict[str, Any], path: str) -> None:
 def validate_backend_response(response: Any) -> None:
     """Validate only the VLM-owned response using the shared output contract."""
     _validate_value(response, _BACKEND_RESPONSE_CONTRACT, "$.backend_response")
+    _validate_explanation_language(
+        response["observations"],
+        response["summary"],
+        response["claims"],
+        "$.backend_response",
+    )
 
 
 def validate_output(
@@ -258,6 +352,13 @@ def validate_output(
 
     classifier = output["classifier"]
     visual_evidence = output["visual_evidence"]
+    explanation = output["explanation"]
+    _validate_explanation_language(
+        visual_evidence["observations"],
+        explanation["summary"],
+        explanation["claims"],
+        "$",
+    )
     if visual_evidence["gradcam_target_class"] != classifier["predicted_class"]:
         raise ValueError("Grad-CAM target class must match the classifier prediction.")
     if (

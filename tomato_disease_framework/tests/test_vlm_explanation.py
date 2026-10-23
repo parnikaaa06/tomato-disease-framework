@@ -112,6 +112,68 @@ def test_schema_accepts_valid_versioned_explanation_and_withholds_advice():
 
 
 @pytest.mark.parametrize(
+    "claim_text",
+    [
+        "Tomato___Late_blight is confirmed.",
+        "The image confirms blight.",
+        "This leaf definitely has a disease.",
+        "This is definitely blight.",
+        "The plant is infected with a pathogen.",
+    ],
+)
+def test_schema_rejects_definitive_disease_confirmation_even_if_uncertain(
+    claim_text: str,
+):
+    output = valid_output()
+    output["explanation"]["claims"][0].update(
+        text=claim_text,
+        certainty="uncertain",
+    )
+
+    with pytest.raises(
+        ValueError, match="must not claim definitive disease confirmation"
+    ):
+        validate_output(output)
+
+
+@pytest.mark.parametrize(
+    "cautious_text",
+    [
+        "The classifier predicts Tomato___Late_blight; this is not a diagnosis.",
+        "The available image does not confirm a disease.",
+        "There is no evidence that the image confirms an infection.",
+        "No definitive evidence establishes an infection.",
+    ],
+)
+def test_schema_allows_cautious_prediction_and_explicit_non_confirmation(
+    cautious_text: str,
+):
+    output = valid_output()
+    output["explanation"]["summary"] = cautious_text
+
+    validate_output(output)
+
+
+def test_backend_response_rejects_definitive_disease_claim_during_orchestration():
+    response = valid_backend_response()
+    response["claims"][0].update(
+        text="The image proves that Tomato___Late_blight is present.",
+        certainty="uncertain",
+    )
+
+    with pytest.raises(
+        ValueError, match="must not claim definitive disease confirmation"
+    ):
+        generate_structured_explanation(
+            TinyClassifier(),
+            torch.randn(1, 3, 24, 24),
+            Image.new("RGB", (24, 24)),
+            ["Tomato___Early_blight", "Tomato___Late_blight", "Tomato___healthy"],
+            FakeBackend(response),
+        )
+
+
+@pytest.mark.parametrize(
     ("mutate", "message"),
     [
         (
