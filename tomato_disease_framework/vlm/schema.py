@@ -200,6 +200,10 @@ _DISEASE_REFERENCE = (
 )
 _NEGATED_CONFIRMATION_PATTERNS = (
     re.compile(
+        r"\bnot\s+(?:a\s+)?(?:definitively\s+)?confirmed\s+diagnos(?:is|tic)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\b(?:does|do|did|is|are|was|were|has|have)\s+not\s+"
         r"(?:definitively\s+)?(?:confirm|prove|diagnos\w*|show|have)\b",
         re.IGNORECASE,
@@ -220,12 +224,36 @@ _NEGATED_CONFIRMATION_PATTERNS = (
         re.IGNORECASE,
     ),
     re.compile(
+        r"\bdiagnos\w*\b.{0,35}\b(?:is|was|has been)\s+not\s+"
+        r"(?:definitively\s+)?(?:confirmed|proven|established)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bnot\s+(?:definitively\s+)?diagnos\w*\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
         r"\bno\s+(?:definitive\s+)?evidence\b[^,.!?]{0,45}"
         r"\b(?:confirm\w*|prove\w*|diagnos\w*|confirmed|proven|diagnosed)\b",
         re.IGNORECASE,
     ),
 )
 _DEFINITIVE_DISEASE_PATTERNS = (
+    re.compile(
+        r"\b(?:confirm\w*|prove\w*|establish\w*)\b.{0,60}"
+        r"\b(?:the\s+)?diagnos(?:is|tic confirmation)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bdiagnos(?:is|tic confirmation)\b.{0,35}"
+        r"(?:(?:is|was|has been)\s+)?"
+        r"(?:definitively\s+)?(?:confirmed|proven|established)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\bdiagnos\w*\b.{0,35}\b(?:with|as)\b",
+        re.IGNORECASE,
+    ),
     re.compile(
         rf"\b(?:confirm\w*|proven|prove\w*|diagnos\w*)\b.{{0,70}}"
         rf"\b{_DISEASE_REFERENCE}\b",

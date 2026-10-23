@@ -18,6 +18,7 @@ from vlm.schema import (
     OUTPUT_SCHEMA,
     REQUIRED_LIMITATIONS,
     SCHEMA_VERSION,
+    validate_backend_response,
     validate_output,
 )
 
@@ -116,6 +117,9 @@ def test_schema_accepts_valid_versioned_explanation_and_withholds_advice():
     [
         "Tomato___Late_blight is confirmed.",
         "The image confirms blight.",
+        "The symptoms confirm the diagnosis of Tomato Bacterial Spot.",
+        "The model confirms the diagnosis.",
+        "The diagnosis is definitively confirmed.",
         "This leaf definitely has a disease.",
         "This is definitely blight.",
         "The plant is infected with a pathogen.",
@@ -136,10 +140,52 @@ def test_schema_rejects_definitive_disease_confirmation_even_if_uncertain(
         validate_output(output)
 
 
+@pytest.mark.parametrize("field", ["observation", "summary", "claim"])
+def test_schema_rejects_exact_definitive_diagnosis_claim_when_uncertain(field: str):
+    output = valid_output()
+    text = (
+        "The visual symptoms and model prediction definitively confirm the "
+        "diagnosis of Tomato Bacterial Spot."
+    )
+    if field == "observation":
+        output["visual_evidence"]["observations"][0].update(
+            text=text, certainty="uncertain"
+        )
+    elif field == "summary":
+        output["explanation"]["summary"] = text
+    else:
+        output["explanation"]["claims"][0].update(
+            text=text, certainty="uncertain"
+        )
+
+    with pytest.raises(
+        ValueError, match="must not claim definitive disease confirmation"
+    ):
+        validate_output(output)
+
+
+@pytest.mark.parametrize("field", ["observation", "summary", "claim"])
+def test_backend_schema_rejects_definitive_confirmation_in_vlm_fields(field: str):
+    response = valid_backend_response()
+    text = "The visual symptoms definitively confirm the diagnosis of blight."
+    if field == "observation":
+        response["observations"][0].update(text=text, certainty="uncertain")
+    elif field == "summary":
+        response["summary"] = text
+    else:
+        response["claims"][0].update(text=text, certainty="uncertain")
+
+    with pytest.raises(
+        ValueError, match="must not claim definitive disease confirmation"
+    ):
+        validate_backend_response(response)
+
+
 @pytest.mark.parametrize(
     "cautious_text",
     [
         "The classifier predicts Tomato___Late_blight; this is not a diagnosis.",
+        "The model output is a prediction, not a confirmed diagnosis.",
         "The available image does not confirm a disease.",
         "There is no evidence that the image confirms an infection.",
         "No definitive evidence establishes an infection.",
