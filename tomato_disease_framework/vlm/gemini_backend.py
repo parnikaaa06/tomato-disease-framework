@@ -22,6 +22,21 @@ DEFAULT_TIMEOUT_MS = 20_000
 MAX_TIMEOUT_MS = 60_000
 DEFAULT_MAX_ATTEMPTS = 2
 _VALID_MODEL_NAME = re.compile(r"^[A-Za-z0-9._/-]+$")
+_SAFE_VALIDATION_DIAGNOSTIC = re.compile(
+    r"^(?P<path>\$[A-Za-z0-9_.\[\]]+)\s+"
+    r"(?P<reason>"
+    r"must not claim definitive disease confirmation from image or classifier evidence"
+    r"|must be (?:object|array|string|integer|number)"
+    r"|must not be empty"
+    r"|must contain at least \d+ items"
+    r"|must be at least \d+(?:\.\d+)?"
+    r"|must be at most \d+(?:\.\d+)?"
+    r"|must be one of"
+    r"|must equal"
+    r"|has unsupported fields"
+    r"|is missing required fields"
+    r")"
+)
 _RETRYABLE_HTTP_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}
 
 
@@ -114,6 +129,14 @@ def _safe_request_error_message(
     if any(word in error_name for word in ("connect", "network", "transport")):
         return "Gemini network connection failed."
     return _safe_api_error_message(None)
+
+
+def _safe_schema_error_message(error: Exception) -> str:
+    """Retain schema path and rule without exposing response values."""
+    match = _SAFE_VALIDATION_DIAGNOSTIC.match(str(error))
+    if match:
+        return f"{match.group('path')}: {match.group('reason')}."
+    return f"local schema validation failed ({type(error).__name__})."
 
 
 class GeminiBackend:
@@ -287,9 +310,10 @@ class GeminiBackend:
             raise GeminiBackendError("Gemini returned malformed JSON.") from None
         try:
             validate_backend_response(parsed_response)
-        except (TypeError, ValueError):
+        except (TypeError, ValueError) as error:
             raise GeminiBackendError(
-                "Gemini response violates the local explanation schema."
+                "Gemini response violates the local explanation schema: "
+                f"{_safe_schema_error_message(error)}"
             ) from None
         return parsed_response
 

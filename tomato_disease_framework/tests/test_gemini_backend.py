@@ -221,6 +221,23 @@ def test_missing_malformed_refused_or_invalid_response_fails(response: Any):
         backend.explain(make_request())
 
 
+def test_schema_rejection_reports_safe_field_and_rule_without_response_text():
+    response = backend_response()
+    response["summary"] = (
+        "The visual symptoms definitively confirm the diagnosis of blight."
+    )
+    backend = GeminiBackend(client=fake_client([text_response(response)]))
+
+    with pytest.raises(GeminiBackendError) as error:
+        backend.explain(make_request())
+
+    assert (
+        "$.backend_response.summary: must not claim definitive disease "
+        "confirmation from image or classifier evidence."
+    ) in str(error.value)
+    assert response["summary"] not in str(error.value)
+
+
 def test_response_text_accessor_failure_is_reported_safely():
     class BrokenResponse:
         candidates: list[Any] = []
