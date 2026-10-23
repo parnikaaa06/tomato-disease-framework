@@ -18,9 +18,11 @@ from vlm.schema import BACKEND_RESPONSE_SCHEMA, validate_backend_response
 
 
 DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
-DEFAULT_TIMEOUT_MS = 30_000
+DEFAULT_TIMEOUT_MS = 20_000
+MAX_TIMEOUT_MS = 60_000
 DEFAULT_MAX_ATTEMPTS = 2
 _VALID_MODEL_NAME = re.compile(r"^[A-Za-z0-9._/-]+$")
+_RETRYABLE_HTTP_STATUS_CODES = {408, 425, 429, 500, 502, 503, 504}
 
 
 class GeminiBackendError(RuntimeError):
@@ -72,8 +74,10 @@ def _status_code(error: Exception) -> int | None:
 
 
 def _is_transient(error: Exception, status_code: int | None) -> bool:
-    if status_code in {408, 429} or (status_code is not None and status_code >= 500):
+    if status_code in _RETRYABLE_HTTP_STATUS_CODES:
         return True
+    if status_code is not None:
+        return False
     if isinstance(error, (TimeoutError, ConnectionError, OSError)):
         return True
     error_name = type(error).__name__.lower()
@@ -118,8 +122,9 @@ class GeminiBackend:
     The SDK is imported and the client constructed only when this backend is
     explicitly initialized without an injected client. Network access occurs
     only in ``explain``. Transient failures are attempted at most twice by
-    default, with a short exponential delay; authentication and permission
-    errors are never retried.
+    default, with a short exponential delay; authentication, permission, and
+    malformed-request errors are never retried. The SDK itself is configured
+    for one attempt, so only this class applies retries.
     """
 
     def __init__(
@@ -128,7 +133,7 @@ class GeminiBackend:
         client: Any | None = None,
         model: str | None = None,
         max_attempts: int = DEFAULT_MAX_ATTEMPTS,
-        timeout_ms: int = DEFAULT_TIMEOUT_MS,
+        timeout_ms: int | None = None,
         sleep_fn: Callable[[float], None] = time.sleep,
     ) -> None:
         configured_model = model if model is not None else os.environ.get(
@@ -144,13 +149,33 @@ class GeminiBackend:
             raise ValueError("max_attempts must be an integer from 1 to 3.")
         if not 1 <= max_attempts <= 3:
             raise ValueError("max_attempts must be an integer from 1 to 3.")
-        if isinstance(timeout_ms, bool) or not isinstance(timeout_ms, int):
-            raise ValueError("timeout_ms must be a positive integer.")
-        if timeout_ms <= 0:
-            raise ValueError("timeout_ms must be a positive integer.")
+        timeout_source = "timeout_ms"
+        if timeout_ms is None:
+            configured_timeout = os.environ.get("GEMINI_TIMEOUT_MS")
+            if configured_timeout is None:
+                timeout_ms = DEFAULT_TIMEOUT_MS
+            else:
+                timeout_source = "GEMINI_TIMEOUT_MS"
+                try:
+                    timeout_ms = int(configured_timeout)
+                except ValueError:
+                    raise ValueError(
+                        f"{timeout_source} must be an integer from 1 to "
+                        f"{MAX_TIMEOUT_MS}."
+                    ) from None
+        if (
+            isinstance(timeout_ms, bool)
+            or not isinstance(timeout_ms, int)
+            or not 1 <= timeout_ms <= MAX_TIMEOUT_MS
+        ):
+            raise ValueError(
+                f"{timeout_source} must be an integer from 1 to "
+                f"{MAX_TIMEOUT_MS}."
+            )
 
         self.model = configured_model
         self.max_attempts = max_attempts
+        self.timeout_ms = timeout_ms
         self.sleep_fn = sleep_fn
         self._owns_client = client is None
 
@@ -172,7 +197,7 @@ class GeminiBackend:
                 client = genai.Client(
                     api_key=api_key,
                     http_options=types.HttpOptions(
-                        timeout=timeout_ms,
+                        timeout=self.timeout_ms,
                         retry_options=types.HttpRetryOptions(attempts=1),
                     ),
                 )

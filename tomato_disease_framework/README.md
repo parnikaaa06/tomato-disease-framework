@@ -189,9 +189,18 @@ os.environ["RUN_GEMINI_INTEGRATION"] = "1"
 ```
 
 This smoke test consumes Gemini quota and may incur charges. The configured
-backend uses a 30-second request timeout and at most two attempts; it retries
-only transient network/service errors, timeouts, and HTTP 408/429/5xx once.
-Authentication and permission failures are not retried. Quotas, pricing,
+backend uses a 20-second Google SDK HTTP timeout by default, overridable with
+`GEMINI_TIMEOUT_MS` (1–60,000 milliseconds). The SDK's own
+retry count is set to one attempt (no SDK-level retry); the application makes
+at most two attempts by default, with one 0.5-second backoff. Thus the default
+configured timeout budget is about 40.5 seconds across two attempts, plus
+connection and processing overhead. `GeminiBackend(max_attempts=3)` can
+explicitly permit three application attempts (about 61.5 seconds at the
+default timeout). These are approximate budgets, not hard wall-clock
+deadlines: the SDK timeout applies to HTTP operations and upstream behavior
+can add latency. Only transient network/timeouts and HTTP 408, 425, 429, 500,
+502, 503, and 504 are retried. Authentication, permission, malformed-request,
+and response-schema errors are not retried. Quotas, pricing,
 supported model identifiers, and availability depend on the Google account
 and can change; check current Google AI Studio/API terms and billing before
 use.

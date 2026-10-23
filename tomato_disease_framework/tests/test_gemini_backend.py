@@ -4,7 +4,7 @@ import importlib
 import json
 import socket
 import sys
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from typing import Any
 
 import pytest
@@ -139,10 +139,65 @@ def test_invalid_model_configuration_is_rejected(model: str):
 
 def test_default_model_and_environment_override(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("GEMINI_MODEL", raising=False)
-    assert GeminiBackend(client=fake_client([])).model == DEFAULT_GEMINI_MODEL
+    default_backend = GeminiBackend(client=fake_client([]))
+    assert default_backend.model == DEFAULT_GEMINI_MODEL
+    assert default_backend.timeout_ms == 20_000
 
     monkeypatch.setenv("GEMINI_MODEL", "gemini-configured-model")
     assert GeminiBackend(client=fake_client([])).model == "gemini-configured-model"
+
+
+@pytest.mark.parametrize("timeout", ["0", "-1", "60001", "not-a-number"])
+def test_invalid_timeout_environment_is_rejected(
+    monkeypatch: pytest.MonkeyPatch,
+    timeout: str,
+):
+    monkeypatch.setenv("GEMINI_TIMEOUT_MS", timeout)
+
+    with pytest.raises(ValueError, match="GEMINI_TIMEOUT_MS"):
+        GeminiBackend(client=fake_client([]))
+
+
+def test_sdk_client_receives_configured_timeout_without_sdk_retries(
+    monkeypatch: pytest.MonkeyPatch,
+):
+    captured: dict[str, Any] = {}
+
+    class FakeHttpRetryOptions:
+        def __init__(self, *, attempts: int) -> None:
+            self.attempts = attempts
+
+    class FakeHttpOptions:
+        def __init__(self, *, timeout: int, retry_options: Any) -> None:
+            self.timeout = timeout
+            self.retry_options = retry_options
+
+    class FakeSdkClient:
+        def __init__(self, *, api_key: str, http_options: Any) -> None:
+            captured["api_key"] = api_key
+            captured["http_options"] = http_options
+            self.models = FakeModels([])
+
+    google_module = ModuleType("google")
+    google_module.__path__ = []
+    genai_module = ModuleType("google.genai")
+    types_module = ModuleType("google.genai.types")
+    genai_module.Client = FakeSdkClient
+    genai_module.types = types_module
+    types_module.HttpOptions = FakeHttpOptions
+    types_module.HttpRetryOptions = FakeHttpRetryOptions
+    google_module.genai = genai_module
+    monkeypatch.setitem(sys.modules, "google", google_module)
+    monkeypatch.setitem(sys.modules, "google.genai", genai_module)
+    monkeypatch.setitem(sys.modules, "google.genai.types", types_module)
+    monkeypatch.setenv("GEMINI_API_KEY", "test-only-secret")
+    monkeypatch.setenv("GEMINI_TIMEOUT_MS", "12345")
+
+    backend = GeminiBackend()
+
+    assert backend.timeout_ms == 12_345
+    assert captured["http_options"].timeout == 12_345
+    assert captured["http_options"].retry_options.attempts == 1
 
 
 @pytest.mark.parametrize(
@@ -195,6 +250,8 @@ class MockApiError(Exception):
         (403, "permission denied"),
         (429, "rate limit or quota"),
         (500, "service error"),
+        (503, "service error"),
+        (504, "service error"),
     ],
 )
 def test_api_errors_are_reported_safely_and_retries_are_bounded(
@@ -220,8 +277,19 @@ def test_api_errors_are_reported_safely_and_retries_are_bounded(
         backend.explain(make_request())
 
     assert len(client.models.calls) == (1 if code in {401, 403} else 2)
-    assert sleeps == ([0.5] if code in {429, 500} else [])
+    assert sleeps == ([0.5] if code in {429, 500, 503, 504} else [])
     assert key_material not in str(error.value)
+
+
+@pytest.mark.parametrize("code", [400, 501])
+def test_non_transient_http_errors_are_not_retried(code: int):
+    client = fake_client([MockApiError(code), text_response(backend_response())])
+    backend = GeminiBackend(client=client)
+
+    with pytest.raises(GeminiBackendError):
+        backend.explain(make_request())
+
+    assert len(client.models.calls) == 1
 
 
 def test_transient_timeout_retries_once_then_succeeds():
