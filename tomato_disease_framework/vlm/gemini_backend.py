@@ -17,7 +17,7 @@ from vlm.explanation import ExplanationRequest
 from vlm.schema import BACKEND_RESPONSE_SCHEMA, validate_backend_response
 
 
-DEFAULT_GEMINI_MODEL = "gemini-3.8-flash"
+DEFAULT_GEMINI_MODEL = "gemini-3.6-flash"
 DEFAULT_TIMEOUT_MS = 20_000
 MAX_TIMEOUT_MS = 60_000
 DEFAULT_MAX_ATTEMPTS = 2

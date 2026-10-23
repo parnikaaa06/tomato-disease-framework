@@ -140,7 +140,8 @@ def test_invalid_model_configuration_is_rejected(model: str):
 def test_default_model_and_environment_override(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("GEMINI_MODEL", raising=False)
     default_backend = GeminiBackend(client=fake_client([]))
-    assert default_backend.model == DEFAULT_GEMINI_MODEL
+    assert DEFAULT_GEMINI_MODEL == "gemini-3.6-flash"
+    assert default_backend.model == "gemini-3.6-flash"
     assert default_backend.timeout_ms == 20_000
 
     monkeypatch.setenv("GEMINI_MODEL", "gemini-configured-model")

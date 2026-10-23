@@ -131,7 +131,7 @@ claim is factually correct.
 ### Install and configure
 
 Install the project dependencies, including Google's official `google-genai`
-SDK (`>=2.0.0,<3.0.0`):
+SDK (`>=2.12.1,<3.0.0`):
 
 ```bash
 python -m pip install -r requirements.txt
@@ -140,14 +140,14 @@ python -m pip install -r requirements.txt
 Create an API key in [Google AI Studio](https://aistudio.google.com/apikey).
 Keep it out of source files, notebooks, YAML, Git, and logs. The backend reads
 `GEMINI_API_KEY` and uses `GEMINI_MODEL` when set; the default model identifier
-is `gemini-3.8-flash` (availability can change). For a local PowerShell
+is `gemini-3.6-flash` (availability can change). For a local PowerShell
 session, set values without writing them to the repository:
 
 ```powershell
 $secureKey = Read-Host "Gemini API key" -AsSecureString
 $env:GEMINI_API_KEY = [System.Net.NetworkCredential]::new("", $secureKey).Password
 Remove-Variable secureKey
-$env:GEMINI_MODEL = "gemini-3.8-flash"
+$env:GEMINI_MODEL = "gemini-3.6-flash"
 ```
 
 In Colab, save the key under **Secrets** (for example, `GEMINI_API_KEY`) and
@@ -158,7 +158,7 @@ import os
 from google.colab import userdata
 
 os.environ["GEMINI_API_KEY"] = userdata.get("GEMINI_API_KEY")
-os.environ["GEMINI_MODEL"] = "gemini-3.8-flash"
+os.environ["GEMINI_MODEL"] = "gemini-3.6-flash"
 ```
 
 ### Offline tests and opt-in API smoke test
