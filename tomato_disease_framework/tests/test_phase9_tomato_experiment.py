@@ -12,6 +12,7 @@ from torch import nn
 
 import evaluation.run_phase9_experiment as phase9_experiment
 from vlm.explanation import ExplanationRequest
+from vlm.gemini_backend import GeminiBackendError
 
 
 class TinyClassifier(nn.Module):
@@ -27,14 +28,14 @@ class TinyClassifier(nn.Module):
 
 
 class FakeBackend:
-    def __init__(self, fail: bool = False) -> None:
-        self.fail = fail
+    def __init__(self, failure: Exception | None = None) -> None:
+        self.failure = failure
         self.requests: list[ExplanationRequest] = []
 
     def explain(self, request: ExplanationRequest) -> dict[str, Any]:
         self.requests.append(request)
-        if self.fail:
-            raise RuntimeError("mock backend failure")
+        if self.failure is not None:
+            raise self.failure
         return {
             "observations": [
                 {
@@ -135,11 +136,26 @@ def test_select_official_test_row_requires_membership_and_valid_index(tmp_path: 
         )
 
 
-@pytest.mark.parametrize("failure_mode", [None, "request", "initialization"])
+@pytest.mark.parametrize(
+    ("failure_mode", "backend_failure"),
+    [
+        (None, None),
+        (
+            "safe_backend",
+            GeminiBackendError("Gemini service error (HTTP 504)."),
+        ),
+        (
+            "unexpected_backend",
+            RuntimeError("raw SDK response and secret test-token"),
+        ),
+        ("initialization", None),
+    ],
+)
 def test_single_image_experiment_saves_valid_result_or_explicit_failure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     failure_mode: str | None,
+    backend_failure: Exception | None,
 ):
     dataset_root = tmp_path / "dataset"
     split_path = tmp_path / "data" / "splits" / "test.csv"
@@ -161,7 +177,7 @@ def test_single_image_experiment_saves_valid_result_or_explicit_failure(
     )
 
     backend = None if failure_mode == "initialization" else FakeBackend(
-        fail=failure_mode == "request"
+        failure=backend_failure
     )
 
     def backend_factory() -> FakeBackend:
@@ -205,8 +221,23 @@ def test_single_image_experiment_saves_valid_result_or_explicit_failure(
         assert saved["validated_explanation"] is None
         assert saved["failure_status"]["stage"] == "structured_explanation"
         assert saved["failure_status"]["error_type"] == (
-            "ValueError" if failure_mode == "initialization" else "RuntimeError"
+            "ValueError"
+            if failure_mode == "initialization"
+            else (
+                "GeminiBackendError"
+                if failure_mode == "safe_backend"
+                else "RuntimeError"
+            )
         )
+        if failure_mode == "safe_backend":
+            assert saved["failure_status"]["message"] == (
+                "Gemini service error (HTTP 504)."
+            )
+        else:
+            assert saved["failure_status"]["message"] == (
+                "No validated VLM explanation was produced."
+            )
+            assert "secret test-token" not in json.dumps(saved)
     else:
         assert backend is not None
         explanation = saved["validated_explanation"]

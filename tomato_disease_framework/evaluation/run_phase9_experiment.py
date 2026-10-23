@@ -32,7 +32,7 @@ from vlm.explanation import (
     ExplanationRequest,
     generate_structured_explanation,
 )
-from vlm.gemini_backend import GeminiBackend
+from vlm.gemini_backend import GeminiBackend, GeminiBackendError
 from vlm.schema import validate_output
 
 
@@ -233,7 +233,11 @@ def run_single_image_experiment(
         failure = {
             "stage": "structured_explanation",
             "error_type": type(error).__name__,
-            "message": "No validated VLM explanation was produced.",
+            "message": (
+                str(error)
+                if isinstance(error, GeminiBackendError)
+                else "No validated VLM explanation was produced."
+            ),
         }
     finally:
         try:
