@@ -205,6 +205,38 @@ supported model identifiers, and availability depend on the Google account
 and can change; check current Google AI Studio/API terms and billing before
 use.
 
+### One-image Phase 9 experiment
+
+Run a single real image listed in the official Phase 2 test CSV through the
+existing Phase 3 EfficientNet-B0 checkpoint, Phase 8 Grad-CAM, and Phase 9
+Gemini backend. From Colab, mount Drive, clone/pull the project, load
+`GEMINI_API_KEY` from Colab Secrets as shown above, and set `GEMINI_MODEL` if
+you want a non-default model. Then run from the repository root:
+
+```bash
+!python -m evaluation.run_phase9_experiment \
+  --config configs/phase3_baseline.yaml \
+  --dataset-root "/content/drive/MyDrive/PlantVillage/tomato" \
+  --checkpoint "/content/drive/MyDrive/tomato-disease/results/phase3/efficientnet_b0_baseline/best_checkpoint.pt" \
+  --output-dir "/content/drive/MyDrive/tomato-disease/phase9/single_image" \
+  --row-index 0
+```
+
+`--row-index` is a zero-based row index in the configured official `test.csv`
+and defaults to `0`. Instead, `--image-path` may name a path present in that
+CSV (relative paths are resolved from `--dataset-root`). The two selectors
+cannot be used together. The command rejects an image not listed in the
+official test split. It saves one Grad-CAM visualization and a JSON result
+with the split row/image identity, checkpoint/model identity, true class,
+prediction, explicitly uncalibrated softmax score, and locally validated
+explanation. If Gemini or local explanation validation fails, the visualization
+and a failure-status JSON are still saved; no explanation is fabricated and
+the command exits with a nonzero status.
+
+This is a single-image demonstration, not evidence of disease severity,
+progression, lesion segmentation, or field reliability. The original image
+and Grad-CAM heatmap are sent to Google for inference.
+
 For an application call, load the existing Phase 3 model and checkpoint,
 prepare `input_tensor` with Phase 3 test transforms, and retain the original
 PIL image. Then inject the backend explicitly:
