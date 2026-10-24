@@ -189,7 +189,7 @@
       ],
       "background": [
         {
-          "statement": "Tamil Nadu Agricultural University lists red spider mites (Tetranychus spp.) as a tomato pest. This source does not establish that every image in the dataset class is specifically the two-spotted species.",
+          "statement": "The accessible TNAU tomato page labels the pest as red spider mite but does not identify its genus or species in the retrieved content. It does not establish that any individual PlantVillage image is specifically the two-spotted spider mite.",
           "source_ids": [
             "tnau_tomato_red_spider_mite"
           ]
@@ -223,7 +223,7 @@
       ],
       "background": [
         {
-          "statement": "Tomato target spot is caused by Corynespora cassiicola and occurs in tropical and subtropical regions as well as some protected-production systems.",
+          "statement": "UF/IFAS identifies Corynespora cassiicola as the cause of tomato target spot and says the pathogen is commonly found in tropical and subtropical regions and greenhouse production; the publication focuses on Florida.",
           "source_ids": [
             "uf_ifas_target_spot_tomato"
           ]
@@ -231,7 +231,7 @@
       ],
       "reported_symptoms": [
         {
-          "statement": "Leaf lesions may be small and necrotic with light-brown centers and dark margins; symptoms can begin within the canopy. Fruit lesions may start as slightly sunken brown flecks and develop into pitted areas.",
+          "statement": "UF/IFAS describes pinpoint dark-brown leaf lesions that enlarge to light-brown or gray centers with dark concentric rings, sometimes with diffuse yellowing; disease may develop in the inner canopy. Fruit lesions begin as small brown sunken flecks and can become deeply pitted.",
           "source_ids": [
             "uf_ifas_target_spot_tomato"
           ]
@@ -299,7 +299,7 @@
       ],
       "reported_symptoms": [
         {
-          "statement": "Reported symptoms can include light and dark green mosaic patterns, leaf or growing-point distortion, abnormal plant growth, and sometimes discolored or malformed fruit. Similar virus symptoms require careful diagnosis.",
+          "statement": "The cited page groups Tobacco mosaic virus and Tomato mosaic virus when describing symptoms, including abnormal leaf color and patterns, distorted growing points or stems, abnormal plant growth, and malformed or discolored fruit; these shared descriptions are not specific confirmation of Tomato mosaic virus in an individual plant.",
           "source_ids": [
             "usu_tobacco_tomato_mosaic_virus"
           ]
