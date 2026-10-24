@@ -4,10 +4,12 @@ from __future__ import annotations
 
 import math
 import re
+from datetime import date
 from typing import Any
+from urllib.parse import urlparse
 
 
-SCHEMA_VERSION = "1.0"
+SCHEMA_VERSION = "1.1"
 REQUIRED_LIMITATIONS = (
     "Grad-CAM is not a lesion segmentation mask.",
     "The classifier softmax score is uncalibrated.",
@@ -140,13 +142,93 @@ OUTPUT_SCHEMA: dict[str, Any] = {
         "recommendations": {
             "type": "object",
             "additionalProperties": False,
-            "required": ["status", "items"],
+            "required": ["status", "basis_class", "withheld_reason", "items"],
             "properties": {
                 "status": {
                     "type": "string",
-                    "const": "withheld_no_verified_source",
+                    "enum": [
+                        "withheld_no_verified_source",
+                        "available_verified_source",
+                    ],
                 },
-                "items": {"type": "array", "maxItems": 0},
+                "basis_class": {"type": "string", "minLength": 1},
+                "withheld_reason": {
+                    "type": "string",
+                    "enum": [
+                        "",
+                        "healthy_class",
+                        "no_matching_record",
+                        "no_verified_source",
+                        "no_sufficient_relevant_guidance",
+                        "contradictory_evidence",
+                        "restricted_guidance",
+                    ],
+                },
+                "items": {
+                    "type": "array",
+                    "maxItems": 10,
+                    "items": {
+                        "type": "object",
+                        "additionalProperties": False,
+                        "required": [
+                            "guidance_id",
+                            "statement",
+                            "guidance_type",
+                            "sources",
+                        ],
+                        "properties": {
+                            "guidance_id": {"type": "string", "minLength": 1},
+                            "statement": {"type": "string", "minLength": 1},
+                            "guidance_type": {
+                                "type": "string",
+                                "const": "general_educational_information",
+                            },
+                            "sources": {
+                                "type": "array",
+                                "minItems": 1,
+                                "items": {
+                                    "type": "object",
+                                    "additionalProperties": False,
+                                    "required": [
+                                        "source_id",
+                                        "title",
+                                        "organization",
+                                        "url",
+                                        "publication_date",
+                                        "verification_status",
+                                        "verified_on",
+                                        "verification_method",
+                                    ],
+                                    "properties": {
+                                        "source_id": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "title": {"type": "string", "minLength": 1},
+                                        "organization": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "url": {"type": "string", "minLength": 1},
+                                        "publication_date": {"type": "string"},
+                                        "verification_status": {
+                                            "type": "string",
+                                            "const": "verified",
+                                        },
+                                        "verified_on": {
+                                            "type": "string",
+                                            "minLength": 1,
+                                        },
+                                        "verification_method": {
+                                            "type": "string",
+                                            "const": "manual_content_review",
+                                        },
+                                    },
+                                },
+                            },
+                        },
+                    },
+                },
             },
         },
         "limitations": {
@@ -381,6 +463,49 @@ def validate_output(
     classifier = output["classifier"]
     visual_evidence = output["visual_evidence"]
     explanation = output["explanation"]
+    recommendations = output["recommendations"]
+    if recommendations["basis_class"] != classifier["predicted_class"]:
+        raise ValueError(
+            "Recommendation basis class must match the classifier prediction."
+        )
+    if recommendations["status"] == "withheld_no_verified_source":
+        if recommendations["items"] or not recommendations["withheld_reason"]:
+            raise ValueError(
+                "Withheld recommendations must be empty and include a reason."
+            )
+    elif recommendations["withheld_reason"] or not recommendations["items"]:
+        raise ValueError(
+            "Available recommendations must include evidence and no withheld reason."
+        )
+    elif classifier["predicted_class"] == "Tomato___healthy":
+        raise ValueError("Healthy-class predictions cannot have disease guidance.")
+    for recommendation_index, recommendation in enumerate(recommendations["items"]):
+        for source_index, source in enumerate(recommendation["sources"]):
+            source_path = (
+                f"$.recommendations.items[{recommendation_index}]"
+                f".sources[{source_index}]"
+            )
+            parsed_url = urlparse(source["url"])
+            if (
+                parsed_url.scheme != "https"
+                or not parsed_url.netloc
+                or parsed_url.username
+                or parsed_url.password
+            ):
+                raise ValueError(f"{source_path}.url must use HTTPS.")
+            try:
+                date.fromisoformat(source["verified_on"])
+            except ValueError as error:
+                raise ValueError(
+                    f"{source_path}.verified_on must be an ISO date."
+                ) from error
+            if source["publication_date"]:
+                try:
+                    date.fromisoformat(source["publication_date"])
+                except ValueError as error:
+                    raise ValueError(
+                        f"{source_path}.publication_date must be an ISO date or empty."
+                    ) from error
     _validate_explanation_language(
         visual_evidence["observations"],
         explanation["summary"],

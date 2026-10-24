@@ -1,1 +1,95 @@
-﻿# Placeholder for: knowledge_base/tomato_diseases.json\n
+{
+  "schema_version": "1.0",
+  "records": [
+    {
+      "disease_id": "tomato_bacterial_spot",
+      "class_id": "Tomato___Bacterial_spot",
+      "display_name": "Bacterial spot",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_early_blight",
+      "class_id": "Tomato___Early_blight",
+      "display_name": "Early blight",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_late_blight",
+      "class_id": "Tomato___Late_blight",
+      "display_name": "Late blight",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_leaf_mold",
+      "class_id": "Tomato___Leaf_Mold",
+      "display_name": "Leaf Mold",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_septoria_leaf_spot",
+      "class_id": "Tomato___Septoria_leaf_spot",
+      "display_name": "Septoria leaf spot",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_spider_mites_two_spotted_spider_mite",
+      "class_id": "Tomato___Spider_mites Two-spotted_spider_mite",
+      "display_name": "Spider mites (Two-spotted spider mite)",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_target_spot",
+      "class_id": "Tomato___Target_Spot",
+      "display_name": "Target Spot",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_yellow_leaf_curl_virus",
+      "class_id": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
+      "display_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_mosaic_virus",
+      "class_id": "Tomato___Tomato_mosaic_virus",
+      "display_name": "Tomato mosaic virus",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    },
+    {
+      "disease_id": "tomato_healthy",
+      "class_id": "Tomato___healthy",
+      "display_name": "Healthy tomato leaf",
+      "sources": [],
+      "background": [],
+      "reported_symptoms": [],
+      "management_guidance": []
+    }
+  ]
+}

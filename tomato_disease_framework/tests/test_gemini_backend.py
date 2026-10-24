@@ -382,6 +382,12 @@ def test_gemini_backend_preserves_classifier_and_withholds_recommendations():
     assert output["limitations"] == list(REQUIRED_LIMITATIONS)
     assert output["recommendations"] == {
         "status": "withheld_no_verified_source",
+        "basis_class": output["classifier"]["predicted_class"],
+        "withheld_reason": (
+            "healthy_class"
+            if output["classifier"]["predicted_class"] == "Tomato___healthy"
+            else "no_verified_source"
+        ),
         "items": [],
     }
     for key, tensor in model.state_dict().items():

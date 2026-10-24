@@ -249,6 +249,18 @@ def test_single_image_experiment_saves_valid_result_or_explicit_failure(
         )
         assert explanation["recommendations"] == {
             "status": "withheld_no_verified_source",
+            "basis_class": result["prediction"]["predicted_class"],
+            "withheld_reason": (
+                "healthy_class"
+                if result["prediction"]["predicted_class"] == "Tomato___healthy"
+                else (
+                    "no_matching_record"
+                    if result["prediction"]["predicted_class"].startswith(
+                        "Tomato___class_"
+                    )
+                    else "no_verified_source"
+                )
+            ),
             "items": [],
         }
         assert "not a lesion segmentation mask" in explanation["limitations"][0].lower()

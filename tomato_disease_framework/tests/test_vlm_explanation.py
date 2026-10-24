@@ -92,10 +92,50 @@ def valid_output() -> dict[str, Any]:
         },
         "recommendations": {
             "status": "withheld_no_verified_source",
+            "basis_class": "Tomato___healthy",
+            "withheld_reason": "healthy_class",
             "items": [],
         },
         "limitations": list(REQUIRED_LIMITATIONS),
     }
+
+
+def verified_test_knowledge_base() -> dict[str, Any]:
+    source = {
+        "source_id": "synthetic-test-source",
+        "title": "Synthetic test-only reference",
+        "organization": "Unit test fixture",
+        "url": "https://example.invalid/test-reference",
+        "publication_date": "",
+        "verification_status": "verified",
+        "verified_on": "2026-01-01",
+        "verification_method": "manual_content_review",
+    }
+    records = []
+    for class_id in (
+        "Tomato___Early_blight",
+        "Tomato___Late_blight",
+        "Tomato___healthy",
+    ):
+        records.append(
+            {
+                "disease_id": class_id.lower().replace("___", "_"),
+                "class_id": class_id,
+                "display_name": class_id,
+                "sources": [source],
+                "background": [],
+                "reported_symptoms": [],
+                "management_guidance": [
+                    {
+                        "guidance_id": "synthetic-general-guidance",
+                        "statement": "Test-only general educational information.",
+                        "source_ids": [source["source_id"]],
+                        "support_status": "sufficient",
+                    }
+                ],
+            }
+        )
+    return {"schema_version": "1.0", "records": records}
 
 
 def test_schema_accepts_valid_versioned_explanation_and_withholds_advice():
@@ -104,10 +144,12 @@ def test_schema_accepts_valid_versioned_explanation_and_withholds_advice():
     validate_output(output)
 
     assert OUTPUT_SCHEMA["additionalProperties"] is False
-    assert output["schema_version"] == "1.0"
+    assert output["schema_version"] == SCHEMA_VERSION
     json.dumps(output, allow_nan=False)
     assert output["recommendations"] == {
         "status": "withheld_no_verified_source",
+        "basis_class": "Tomato___healthy",
+        "withheld_reason": "healthy_class",
         "items": [],
     }
 
@@ -248,11 +290,11 @@ def test_backend_response_rejects_definitive_disease_claim_during_orchestration(
             lambda output: output["recommendations"].update(
                 status="recommendation_available"
             ),
-            "must equal",
+            "must be one of",
         ),
         (
             lambda output: output["recommendations"].update(items=["apply treatment"]),
-            "at most 0 items",
+            "must be object",
         ),
         (
             lambda output: output.update(unapproved_field=True),
@@ -343,6 +385,52 @@ def test_backend_cannot_override_classifier_fields():
             ["Tomato___Early_blight", "Tomato___Late_blight", "Tomato___healthy"],
             backend,
         )
+
+
+def test_backend_cannot_supply_or_override_recommendations():
+    response = valid_backend_response()
+    response["recommendations"] = {
+        "status": "available_verified_source",
+        "items": [{"statement": "invented advice"}],
+    }
+
+    with pytest.raises(
+        ValueError, match="exactly 'observations', 'summary', and 'claims'"
+    ):
+        generate_structured_explanation(
+            TinyClassifier(),
+            torch.randn(1, 3, 24, 24),
+            Image.new("RGB", (24, 24)),
+            ["Tomato___Early_blight", "Tomato___Late_blight", "Tomato___healthy"],
+            FakeBackend(response),
+        )
+
+
+def test_application_generates_recommendations_only_from_verified_local_record():
+    model = TinyClassifier()
+    with torch.no_grad():
+        model.classifier.weight.zero_()
+        model.classifier.bias.copy_(torch.tensor([10.0, 0.0, 0.0]))
+
+    output = generate_structured_explanation(
+        model,
+        torch.randn(1, 3, 24, 24),
+        Image.new("RGB", (24, 24)),
+        ["Tomato___Early_blight", "Tomato___Late_blight", "Tomato___healthy"],
+        FakeBackend(),
+        knowledge_base=verified_test_knowledge_base(),
+    )
+
+    recommendation = output["recommendations"]
+    assert recommendation["basis_class"] == output["classifier"]["predicted_class"]
+    assert recommendation["status"] == "available_verified_source"
+    assert recommendation["items"][0]["statement"] == (
+        "Test-only general educational information."
+    )
+    assert recommendation["items"][0]["sources"][0]["verification_status"] == (
+        "verified"
+    )
+    assert recommendation["items"][0]["sources"][0]["url"].startswith("https://")
 
 
 def test_backend_response_with_missing_fields_is_rejected():

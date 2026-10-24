@@ -124,8 +124,9 @@ The Phase 3 classifier remains the source of the predicted class and
 uncalibrated softmax score; Gemini generates only visual observations and
 evidence-linked explanation claims. The application validates the response
 locally and always withholds recommendations because no verified
-disease-specific recommendation source is configured. Human review remains
-necessary: schema-valid model output is not proof that a natural-language
+recommendation source is currently configured. Recommendations are handled
+only by the separate Phase 10 application policy, never by Gemini. Human review
+remains necessary: schema-valid model output is not proof that a natural-language
 claim is factually correct.
 
 ### Install and configure
@@ -260,6 +261,40 @@ you have permission and accept the provider's applicable data handling terms.
 The heatmap is attribution evidence, not a lesion mask. Outputs are not
 validated against disease-specific ground truth, do not provide treatments,
 and do not establish field reliability; review every explanation before use.
+
+## Phase 10: knowledge-grounded recommendations
+
+`knowledge_base/tomato_diseases.json` now provides deterministic exact-class
+records for the ten PlantVillage tomato labels. It contains disease display
+names only: there are currently no source records, background claims, reported
+symptom claims, or management guidance in the file. **No real source has been
+verified and recommendations remain withheld for every class.**
+
+Retrieval uses the Phase 3 classifier's predicted class as an exact lookup key;
+it does not substitute another record and does not treat the prediction as a
+confirmed diagnosis. The application-owned policy can emit only management
+statements stored in the local knowledge base that are explicitly marked as
+sufficient, cite sources explicitly marked verified after a curator's manual
+content review, and carry full source provenance. A URL or valid JSON alone
+does not establish verification. Missing, unverified, irrelevant, insufficient,
+or contradictory evidence produces an explicit withholding result. Healthy
+class predictions never produce disease-treatment guidance. Gemini has no
+access to or authority over recommendation records or policy decisions.
+
+If verified guidance is added later, it must remain general educational
+information—not a diagnosis or individualized treatment instruction. This
+policy does not support pesticide-specific advice, dosage, concentrations, or
+application rates. Any future source entries need human review for source
+authority, relevance, current applicability, and consistency; model/schema
+validation is not evidence verification.
+
+Run the local retrieval and recommendation policy tests, with no network or
+Gemini API access:
+
+```bash
+python -m pytest tests/test_knowledge_base.py tests/test_vlm_explanation.py -q
+python -m pytest -q
+```
 
 ## Important notes
 

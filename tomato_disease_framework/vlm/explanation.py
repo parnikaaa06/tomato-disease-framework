@@ -10,9 +10,11 @@ from PIL import Image
 from torch import nn
 
 from explainability.gradcam import generate_gradcam
+from knowledge_base.retrieval import build_recommendations
 from vlm.prompts import EXPLANATION_PROMPT
 from vlm.schema import (
     REQUIRED_LIMITATIONS,
+    SCHEMA_VERSION,
     validate_backend_response,
     validate_output,
 )
@@ -59,12 +61,14 @@ def generate_structured_explanation(
     image: Image.Image,
     class_names: list[str] | tuple[str, ...],
     backend: ExplanationBackend,
+    *,
+    knowledge_base: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build validated JSON while preserving the classifier's prediction.
 
     This function makes no provider/network calls. A backend must be injected
-    explicitly and can author explanation content only; classifier output,
-    limitations, and the withheld-recommendations record are application-owned.
+    explicitly and can author explanation content only. Recommendations are
+    constructed by the local policy from verified knowledge-base evidence.
     """
     if not isinstance(image, Image.Image):
         raise TypeError("image must be a PIL Image.")
@@ -115,6 +119,10 @@ def generate_structured_explanation(
             class_index=class_index,
             softmax_score=softmax_score,
         )
+        recommendations = build_recommendations(
+            classifier.predicted_class,
+            knowledge_base,
+        )
 
         heatmap, gradcam_class_index = generate_gradcam(
             model=model,
@@ -148,7 +156,7 @@ def generate_structured_explanation(
 
         classifier_output = asdict(classifier)
         output: dict[str, Any] = {
-            "schema_version": "1.0",
+            "schema_version": SCHEMA_VERSION,
             "classifier": classifier_output,
             "visual_evidence": {
                 "gradcam_target_class": classifier.predicted_class,
@@ -159,10 +167,7 @@ def generate_structured_explanation(
                 "summary": backend_response["summary"],
                 "claims": backend_response["claims"],
             },
-            "recommendations": {
-                "status": "withheld_no_verified_source",
-                "items": [],
-            },
+            "recommendations": recommendations,
             "limitations": list(REQUIRED_LIMITATIONS),
         }
         validate_output(
