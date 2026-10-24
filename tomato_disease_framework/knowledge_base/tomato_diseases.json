@@ -189,7 +189,7 @@
       ],
       "background": [
         {
-          "statement": "The accessible TNAU tomato page labels the pest as red spider mite but does not identify its genus or species in the retrieved content. It does not establish that any individual PlantVillage image is specifically the two-spotted spider mite.",
+          "statement": "The TNAU page identifies red spider mite as Tetranychus spp.; this genus-level identification does not confirm T. urticae or establish that any individual PlantVillage image is specifically the two-spotted spider mite.",
           "source_ids": [
             "tnau_tomato_red_spider_mite"
           ]
@@ -291,7 +291,7 @@
       ],
       "background": [
         {
-          "statement": "Tomato mosaic virus is a tobamovirus. The cited source discusses tomato mosaic virus together with tobacco mosaic virus and describes spread by seed, handling, and contaminated tools.",
+          "statement": "The cited source identifies Tomato mosaic virus and Tobacco mosaic virus as tobamoviruses and discusses spread by seed, artificial grafting, and human handling; it does not specifically attribute every transmission route to Tomato mosaic virus alone.",
           "source_ids": [
             "usu_tobacco_tomato_mosaic_virus"
           ]
