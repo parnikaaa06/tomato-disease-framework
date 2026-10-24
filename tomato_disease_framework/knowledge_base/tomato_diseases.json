@@ -2,88 +2,313 @@
   "schema_version": "1.0",
   "records": [
     {
-      "disease_id": "tomato_bacterial_spot",
+      "disease_id": "bacterial_spot",
       "class_id": "Tomato___Bacterial_spot",
-      "display_name": "Bacterial spot",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato bacterial spot",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_bacterial_leaf_spot",
+          "title": "Bacterial leaf spot",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://agritech.tnau.ac.in/crop_protection/tomato_diseases_11.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University describes tomato bacterial leaf spot as a Xanthomonas-associated disease that can affect leaves and green fruit; infected debris and seed are listed as possible sources of spread.",
+          "source_ids": [
+            "tnau_tomato_bacterial_leaf_spot"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms include small brown, water-soaked circular leaf spots with yellow halos; spots on green fruit may become sunken and scabby.",
+          "source_ids": [
+            "tnau_tomato_bacterial_leaf_spot"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_early_blight",
+      "disease_id": "early_blight",
       "class_id": "Tomato___Early_blight",
-      "display_name": "Early blight",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato early blight",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_early_blight",
+          "title": "Early Blight",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://agritech.tnau.ac.in/crop_protection/tomato_diseases_2.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University identifies Alternaria solani as the causal organism of tomato early blight and notes survival in infected plant debris and spread by rain and wind.",
+          "source_ids": [
+            "tnau_tomato_early_blight"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms include brown spots with concentric bull’s-eye rings and a yellow margin; fruit can develop brown concentric rings.",
+          "source_ids": [
+            "tnau_tomato_early_blight"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_late_blight",
+      "disease_id": "late_blight",
       "class_id": "Tomato___Late_blight",
-      "display_name": "Late blight",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato late blight",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_late_blight",
+          "title": "Late blight",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://agritech.tnau.ac.in/crop_protection/tomato_diseases_8.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University identifies Phytophthora infestans as the causal organism of tomato late blight and describes spread associated with infected debris and wind.",
+          "source_ids": [
+            "tnau_tomato_late_blight"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms include water-soaked dark lesions on leaves and stems, rapid leaf necrosis, white sporulation on leaves, and dark-brown fruit lesions that can progress to soft rot.",
+          "source_ids": [
+            "tnau_tomato_late_blight"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_leaf_mold",
+      "disease_id": "leaf_mold",
       "class_id": "Tomato___Leaf_Mold",
-      "display_name": "Leaf Mold",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato leaf mold",
+      "sources": [
+        {
+          "source_id": "umn_tomato_leaf_mold",
+          "title": "Tomato leaf mold",
+          "organization": "University of Minnesota Extension",
+          "url": "https://extension.umn.edu/agriculture/specialty-crops/vegetable-farming/disease-management/tomato-leaf-mold",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tomato leaf mold is caused by Passalora fulva (also known by older names including Fulvia fulva and Cladosporium fulvum) and is particularly associated with high-humidity greenhouse or high-tunnel production.",
+          "source_ids": [
+            "umn_tomato_leaf_mold"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Pale yellow-green spots may appear on the upper leaf surface, with olive-green to brown velvety growth on the corresponding underside; affected leaves may wither and die.",
+          "source_ids": [
+            "umn_tomato_leaf_mold"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_septoria_leaf_spot",
+      "disease_id": "septoria_leaf_spot",
       "class_id": "Tomato___Septoria_leaf_spot",
-      "display_name": "Septoria leaf spot",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato Septoria leaf spot",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_septoria_leaf_spot",
+          "title": "Septoria Leaf Spot",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://agritech.tnau.ac.in/crop_protection/tomato_diseases_4.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University identifies Septoria lycopersici as the cause of Septoria leaf spot and describes infected plant debris and rain splash or wind as spread pathways.",
+          "source_ids": [
+            "tnau_tomato_septoria_leaf_spot"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms include small round-to-irregular leaf spots with grey centers and dark margins; spots may coalesce and cause blighting.",
+          "source_ids": [
+            "tnau_tomato_septoria_leaf_spot"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_spider_mites_two_spotted_spider_mite",
+      "disease_id": "spider_mites_two_spotted_spider_mite",
       "class_id": "Tomato___Spider_mites Two-spotted_spider_mite",
-      "display_name": "Spider mites (Two-spotted spider mite)",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Two-spotted spider mite damage",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_red_spider_mite",
+          "title": "Red spider mite: Tetranychus spp.",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://www.agritech.tnau.ac.in/crop_protection/tomato/tomato_7.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University lists red spider mites (Tetranychus spp.) as a tomato pest. This source does not establish that every image in the dataset class is specifically the two-spotted species.",
+          "source_ids": [
+            "tnau_tomato_red_spider_mite"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported damage includes reddish-brown or bronzed leaves; severe infestation may produce silken webbing, leaf drying, and effects on flower and fruit formation.",
+          "source_ids": [
+            "tnau_tomato_red_spider_mite"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_target_spot",
+      "disease_id": "target_spot",
       "class_id": "Tomato___Target_Spot",
-      "display_name": "Target Spot",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato target spot",
+      "sources": [
+        {
+          "source_id": "uf_ifas_target_spot_tomato",
+          "title": "Target Spot of Tomato in Florida",
+          "organization": "University of Florida Institute of Food and Agricultural Sciences Extension",
+          "url": "https://ask.ifas.ufl.edu/publication/PP351",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tomato target spot is caused by Corynespora cassiicola and occurs in tropical and subtropical regions as well as some protected-production systems.",
+          "source_ids": [
+            "uf_ifas_target_spot_tomato"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Leaf lesions may be small and necrotic with light-brown centers and dark margins; symptoms can begin within the canopy. Fruit lesions may start as slightly sunken brown flecks and develop into pitted areas.",
+          "source_ids": [
+            "uf_ifas_target_spot_tomato"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
       "disease_id": "tomato_yellow_leaf_curl_virus",
       "class_id": "Tomato___Tomato_Yellow_Leaf_Curl_Virus",
-      "display_name": "Tomato Yellow Leaf Curl Virus (TYLCV)",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "display_name": "Tomato yellow leaf curl virus",
+      "sources": [
+        {
+          "source_id": "tnau_tomato_leaf_curl",
+          "title": "Leaf curl",
+          "organization": "Tamil Nadu Agricultural University, Agritech Portal",
+          "url": "https://agritech.tnau.ac.in/crop_protection/tomato_diseases_6.html",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tamil Nadu Agricultural University describes tomato leaf curl as a virus-associated disease spread by Bemisia whiteflies and movement of infected plants. The TNAU page uses the name tomato leaf curl virus, which is not necessarily a strain-level confirmation of the dataset label TYLCV.",
+          "source_ids": [
+            "tnau_tomato_leaf_curl"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms include severe stunting, downward rolling and crinkling of leaves, shortened internodes, and a bushy appearance.",
+          "source_ids": [
+            "tnau_tomato_leaf_curl"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
       "disease_id": "tomato_mosaic_virus",
       "class_id": "Tomato___Tomato_mosaic_virus",
       "display_name": "Tomato mosaic virus",
-      "sources": [],
-      "background": [],
-      "reported_symptoms": [],
+      "sources": [
+        {
+          "source_id": "usu_tobacco_tomato_mosaic_virus",
+          "title": "Tobacco Mosaic Virus & Tomato Mosaic Virus",
+          "organization": "Utah State University Extension, Plant Health / Integrated Pest Management",
+          "url": "https://extension.usu.edu/planthealth/ipm/notes_ag/veg-TMV-ToMV",
+          "publication_date": "",
+          "verification_status": "unverified",
+          "verified_on": "",
+          "verification_method": ""
+        }
+      ],
+      "background": [
+        {
+          "statement": "Tomato mosaic virus is a tobamovirus. The cited source discusses tomato mosaic virus together with tobacco mosaic virus and describes spread by seed, handling, and contaminated tools.",
+          "source_ids": [
+            "usu_tobacco_tomato_mosaic_virus"
+          ]
+        }
+      ],
+      "reported_symptoms": [
+        {
+          "statement": "Reported symptoms can include light and dark green mosaic patterns, leaf or growing-point distortion, abnormal plant growth, and sometimes discolored or malformed fruit. Similar virus symptoms require careful diagnosis.",
+          "source_ids": [
+            "usu_tobacco_tomato_mosaic_virus"
+          ]
+        }
+      ],
       "management_guidance": []
     },
     {
-      "disease_id": "tomato_healthy",
+      "disease_id": "healthy",
       "class_id": "Tomato___healthy",
       "display_name": "Healthy tomato leaf",
       "sources": [],

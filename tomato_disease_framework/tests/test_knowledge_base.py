@@ -63,11 +63,10 @@ def knowledge_base(
     }
 
 
-def test_packaged_knowledge_base_has_ten_explicitly_unverified_class_records():
+def test_packaged_knowledge_base_has_ten_curated_records_with_valid_provenance():
     data = load_knowledge_base()
 
-    assert len(data["records"]) == 10
-    assert {record["class_id"] for record in data["records"]} == {
+    expected_classes = {
         "Tomato___Bacterial_spot",
         "Tomato___Early_blight",
         "Tomato___Late_blight",
@@ -79,7 +78,33 @@ def test_packaged_knowledge_base_has_ten_explicitly_unverified_class_records():
         "Tomato___Tomato_mosaic_virus",
         "Tomato___healthy",
     }
-    assert all(not record["sources"] for record in data["records"])
+    assert len(data["records"]) == len(expected_classes)
+    assert {record["class_id"] for record in data["records"]} == expected_classes
+
+    for record in data["records"]:
+        sources_by_id = {source["source_id"]: source for source in record["sources"]}
+        if record["class_id"] == HEALTHY_CLASS_ID:
+            assert not record["sources"]
+            assert not record["background"]
+            assert not record["reported_symptoms"]
+        else:
+            assert sources_by_id
+        for statement in (
+            record["background"]
+            + record["reported_symptoms"]
+            + record["management_guidance"]
+        ):
+            assert statement["source_ids"]
+            assert set(statement["source_ids"]) <= sources_by_id.keys()
+        for source in record["sources"]:
+            assert source["title"].strip()
+            assert source["organization"].strip()
+            assert source["url"].startswith("https://")
+            assert source["verification_status"] in {"verified", "unverified"}
+            assert source["verification_status"] == "unverified"
+            assert source["verified_on"] == ""
+            assert source["verification_method"] == ""
+
     assert all(not record["management_guidance"] for record in data["records"])
     result = retrieve_record(CLASS_ID)
     assert result["status"] == "record_found"
